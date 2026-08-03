@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>ANYELO.OS</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="icon" href="/favicon.ico">
+<meta name="theme-color" content="#0B0F14">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Vida">
+<style>
+:root{
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, system-ui, sans-serif;
+  --font-mono: "SF Mono", ui-monospace, "Cascadia Code", Menlo, Consolas, monospace;
+  --bg: #0B0F14;
+  --grid: #1A2230;
+  --text: #E6ECF2;
+  --text-dim: #7A9AB8;
+  --text-mute: #5A7A9A;
+  --border-dim: #1F2A38;
+  --accent-cyan: #4FD1FF;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--bg);color:var(--text);font-family:var(--font-sans);min-height:100vh;-webkit-font-smoothing:antialiased}
+body{
+  padding:env(safe-area-inset-top,0) env(safe-area-inset-right,0) env(safe-area-inset-bottom,0) env(safe-area-inset-left,0);
+  background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+  background-size:24px 24px;background-attachment:fixed;background-position:center;
+}
+body::before{content:"";position:fixed;inset:0;background:radial-gradient(circle at 50% 0%, rgba(79,209,255,0.04), transparent 60%);pointer-events:none;z-index:0}
+main{max-width:1080px;margin:0 auto;padding:16px;position:relative;z-index:1}
+a{color:inherit;text-decoration:none}
+
+/* ===== barra superior HUD ===== */
+.topbar{display:flex;align-items:center;justify-content:space-between;font-family:var(--font-mono);font-size:11px;color:var(--text-dim);letter-spacing:1.5px;margin-bottom:16px;padding:4px 2px}
+.topbar-left{display:flex;align-items:center;gap:8px}
+.pulse{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--accent-cyan);box-shadow:0 0 8px var(--accent-cyan);animation:pulse 1.6s infinite}
+.topbar-right{display:flex;align-items:center;gap:12px}
+.btn-search{background:none;border:1px solid var(--border-dim);color:var(--text-dim);font-family:var(--font-mono);font-size:11px;padding:5px 10px;border-radius:6px;cursor:pointer;letter-spacing:1px;display:flex;align-items:center;gap:6px}
+.btn-search:hover{border-color:var(--text-dim);color:var(--text)}
+.btn-search .kbd{background:var(--border-dim);padding:1px 5px;border-radius:3px;font-size:9px}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
+
+/* ===== animaciones globales ===== */
+@keyframes fi{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fh{from{height:0%}to{height:var(--h,50%)}}
+@keyframes fb{from{width:0%}to{width:var(--w,70%)}}
+@keyframes cu{from{opacity:0.3}to{opacity:1}}
+@keyframes pop{from{opacity:0;transform:scale(0.85)}to{opacity:1;transform:scale(1)}}
+@keyframes dr{from{stroke-dashoffset:200}to{stroke-dashoffset:0}}
+@keyframes rot{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+
+/* ===== grid bento ===== */
+.grid{display:grid;grid-template-columns:2.2fr 1fr 1fr;grid-auto-rows:minmax(80px,auto);gap:10px}
+.mod{border-radius:12px;padding:14px 16px;position:relative;animation:fi 0.5s ease-out both;overflow:hidden;cursor:default}
+.mod::after{content:"";position:absolute;top:8px;right:8px;width:7px;height:7px}
+.mod::before{content:"";position:absolute;bottom:8px;left:8px;width:7px;height:7px}
+.mod:nth-child(1){animation-delay:0.05s}
+.mod:nth-child(2){animation-delay:0.15s}
+.mod:nth-child(3){animation-delay:0.25s}
+.mod:nth-child(4){animation-delay:0.35s}
+.mod:nth-child(5){animation-delay:0.45s}
+.mod:nth-child(6){animation-delay:0.55s}
+.mod-hero{grid-column:1/2;grid-row:1/3;padding:18px}
+.mod-lbl{font-family:var(--font-mono);font-size:10px;letter-spacing:2px;margin-bottom:6px}
+.mod-title{font-size:17px;font-weight:500;color:var(--text);margin-bottom:2px}
+.mod-hero .mod-title{font-size:24px}
+.mod-sub{font-size:12px;color:var(--text-dim)}
+.big-num{font-family:var(--font-mono);font-size:24px;font-weight:500;animation:cu 1s ease-out both}
+
+/* ===== color por módulo (bento HUD multicolor) ===== */
+.c-teal{background:#0E1F1D;border:1px solid #1D4D42}
+.c-teal .mod-lbl{color:#5DCAA5}.c-teal::after{border-top:1px solid #5DCAA5;border-right:1px solid #5DCAA5}.c-teal::before{border-bottom:1px solid #5DCAA5;border-left:1px solid #5DCAA5}
+.c-teal .mod-sub{color:#5DCAA5}.c-teal .big-num{color:#9FE1CB}
+
+.c-pink{background:#1F1017;border:1px solid #5A2340}
+.c-pink .mod-lbl{color:#ED93B1}.c-pink::after{border-top:1px solid #ED93B1;border-right:1px solid #ED93B1}.c-pink::before{border-bottom:1px solid #ED93B1;border-left:1px solid #ED93B1}
+.c-pink .mod-sub{color:#ED93B1}
+
+.c-blue{background:#0A1930;border:1px solid #1B4478}
+.c-blue .mod-lbl{color:#85B7EB}.c-blue::after{border-top:1px solid #85B7EB;border-right:1px solid #85B7EB}.c-blue::before{border-bottom:1px solid #85B7EB;border-left:1px solid #85B7EB}
+.c-blue .mod-sub{color:#85B7EB}
+
+.c-amber{background:#231708;border:1px solid #7A4B0E}
+.c-amber .mod-lbl{color:#EF9F27}.c-amber::after{border-top:1px solid #EF9F27;border-right:1px solid #EF9F27}.c-amber::before{border-bottom:1px solid #EF9F27;border-left:1px solid #EF9F27}
+.c-amber .mod-sub{color:#EF9F27}
+
+.c-purple{background:#181530;border:1px solid #3E3782}
+.c-purple .mod-lbl{color:#AFA9EC}.c-purple::after{border-top:1px solid #AFA9EC;border-right:1px solid #AFA9EC}.c-purple::before{border-bottom:1px solid #AFA9EC;border-left:1px solid #AFA9EC}
+.c-purple .mod-sub{color:#AFA9EC}
+
+.c-coral{background:#20120C;border:1px solid #6E2E15}
+.c-coral .mod-lbl{color:#F0997B}.c-coral::after{border-top:1px solid #F0997B;border-right:1px solid #F0997B}.c-coral::before{border-bottom:1px solid #F0997B;border-left:1px solid #F0997B}
+.c-coral .mod-sub{color:#F0997B}
+
+/* ===== footer HUD ===== */
+.footbar{display:flex;justify-content:space-between;margin-top:16px;font-family:var(--font-mono);font-size:10px;color:var(--text-mute);letter-spacing:1px;padding:4px 2px}
+
+/* ===== estado de carga ===== */
+.loading{padding:3rem 1rem;text-align:center;color:var(--text-mute);font-family:var(--font-mono);font-size:12px;letter-spacing:2px}
+.error{padding:2rem 1rem;color:#F09595;font-family:var(--font-mono);font-size:12px}
+
+/* ===== responsive móvil ===== */
+@media (max-width:640px){
+  .grid{grid-template-columns:1fr}
+  .mod-hero{grid-column:auto;grid-row:auto}
+  .topbar{font-size:10px}
+  .btn-search .kbd{display:none}
+}
+</style>
+</head>
+<body>
+
+<main>
+  <div class="topbar">
+    <div class="topbar-left">
+      <span class="pulse"></span>
+      <span>ANYELO.OS · v0.1</span>
+    </div>
+    <div class="topbar-right">
+      <button class="btn-search" onclick="App.abrirBuscador()" title="Buscar">
+        <span>Buscar</span><span class="kbd">Ctrl · K</span>
+      </button>
+      <span id="clock">— · —</span>
+    </div>
+  </div>
+
+  <div id="home">
+    <div class="grid">
+      <div class="mod c-teal mod-hero"    data-modulo="jorisu"></div>
+      <div class="mod c-pink"             data-modulo="avellana"></div>
+      <div class="mod c-blue"             data-modulo="ulacit"></div>
+      <div class="mod c-amber"            data-modulo="empleo"></div>
+      <div class="mod c-purple"           data-modulo="vault"></div>
+      <div class="mod c-coral"            data-modulo="actividad" style="grid-column:2/4"></div>
+    </div>
+  </div>
+
+  <div class="footbar">
+    <span>◆ VIDA · CENTRO DE MANDO</span>
+    <span id="foot-status">CARGANDO…</span>
+    <span>SEC · CF-ACCESS ●</span>
+  </div>
+</main>
+
+<script>
+const App = {
+  data: null,
+
+  async cargar() {
+    this.renderReloj();
+    document.querySelectorAll('.mod').forEach(el => {
+      el.innerHTML = '<div class="mod-lbl">' + (el.dataset.modulo || '').toUpperCase() + '</div><div class="mod-title" style="opacity:0.4">cargando…</div>';
+    });
+    try {
+      const r = await fetch('/api/proxy?accion=leer');
+      const j = await r.json();
+      if (!j.ok) return this.mostrarError(j.error || 'error de carga');
+      this.data = j;
+      document.getElementById('foot-status').textContent = 'MÓDULOS · 6 ACTIVOS';
+      this.render();
+    } catch (e) {
+      this.mostrarError('sin conexión con el backend (' + e.message + ')');
+    }
+  },
+
+  render() {
+    this.renderJorisu();
+    this.renderAvellana();
+    this.renderUlacit();
+    this.renderEmpleo();
+    this.renderVault();
+    this.renderActividad();
+  },
+
+  renderReloj() {
+    const el = document.getElementById('clock');
+    const tick = () => {
+      const d = new Date(), p = n => String(n).padStart(2, '0');
+      el.textContent = p(d.getDate()) + '.' + p(d.getMonth() + 1) + '.' + d.getFullYear() + ' · ' + p(d.getHours()) + ':' + p(d.getMinutes()) + ':' + p(d.getSeconds());
+    };
+    tick(); setInterval(tick, 1000);
+  },
+
+  // ===== módulos (los rellenan las Tasks 5-10) =====
+  renderJorisu()    { this.placeholderMod('jorisu',    'JORISU S.R.L.',    'módulo primario · próxima task'); },
+  renderAvellana()  { this.placeholderMod('avellana',  'Avellana Studio',  'próxima task'); },
+  renderUlacit()    { this.placeholderMod('ulacit',    'Universidad',      'próxima task'); },
+  renderEmpleo()    { this.placeholderMod('empleo',    'Empleo',           'próxima task'); },
+  renderVault()     { this.placeholderMod('vault',     'Vault',            'próxima task'); },
+  renderActividad() { this.placeholderMod('actividad', 'Actividad 7 días', 'próxima task'); },
+
+  placeholderMod(nombre, titulo, sub) {
+    const el = document.querySelector('[data-modulo="' + nombre + '"]');
+    if (!el) return;
+    el.innerHTML = '<div class="mod-lbl">' + nombre.toUpperCase() + '</div><div class="mod-title">' + titulo + '</div><div class="mod-sub">' + sub + '</div>';
+  },
+
+  recargar() { return this.cargar(); },
+
+  abrirModulo(nombre) {
+    document.getElementById('home').style.display = 'none';
+    const pag = document.getElementById('pagina-' + nombre);
+    if (pag) pag.style.display = 'block';
+  },
+
+  volverHome() {
+    document.querySelectorAll('[id^="pagina-"]').forEach(p => p.style.display = 'none');
+    document.getElementById('home').style.display = 'block';
+  },
+
+  abrirBuscador() {
+    alert('Buscador global: se activa en la Task 12 del plan.');
+  },
+
+  mostrarError(msg) {
+    document.getElementById('foot-status').textContent = 'ERROR';
+    document.querySelectorAll('.mod').forEach(el => {
+      el.innerHTML = '<div class="mod-lbl">' + (el.dataset.modulo || '').toUpperCase() + '</div><div class="mod-title" style="opacity:0.4">sin datos</div><div class="mod-sub">' + msg + '</div>';
+    });
+  }
+};
+
+document.addEventListener('keydown', e => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'k') { e.preventDefault(); App.abrirBuscador(); }
+});
+
+window.addEventListener('DOMContentLoaded', () => App.cargar());
+</script>
+</body>
+</html>
