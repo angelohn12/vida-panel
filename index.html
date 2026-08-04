@@ -33,9 +33,10 @@ body{
 body::before{content:"";position:fixed;inset:0;background:radial-gradient(circle at 50% 0%, rgba(79,209,255,0.04), transparent 60%);pointer-events:none;z-index:0}
 main{max-width:1080px;margin:0 auto;padding:16px;position:relative;z-index:1}
 a{color:inherit;text-decoration:none}
+button{font-family:inherit}
 
 /* ===== barra superior HUD ===== */
-.topbar{display:flex;align-items:center;justify-content:space-between;font-family:var(--font-mono);font-size:11px;color:var(--text-dim);letter-spacing:1.5px;margin-bottom:16px;padding:4px 2px}
+.topbar{display:flex;align-items:center;justify-content:space-between;font-family:var(--font-mono);font-size:11px;color:var(--text-dim);letter-spacing:1.5px;margin-bottom:16px;padding:4px 2px;gap:12px;flex-wrap:wrap}
 .topbar-left{display:flex;align-items:center;gap:8px}
 .pulse{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--accent-cyan);box-shadow:0 0 8px var(--accent-cyan);animation:pulse 1.6s infinite}
 .topbar-right{display:flex;align-items:center;gap:12px}
@@ -46,16 +47,17 @@ a{color:inherit;text-decoration:none}
 
 /* ===== animaciones globales ===== */
 @keyframes fi{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
-@keyframes fh{from{height:0%}to{height:var(--h,50%)}}
-@keyframes fb{from{width:0%}to{width:var(--w,70%)}}
+@keyframes fh{from{height:0}}
+@keyframes fb{from{width:0}}
 @keyframes cu{from{opacity:0.3}to{opacity:1}}
 @keyframes pop{from{opacity:0;transform:scale(0.85)}to{opacity:1;transform:scale(1)}}
-@keyframes dr{from{stroke-dashoffset:200}to{stroke-dashoffset:0}}
+@keyframes dr{from{stroke-dashoffset:240}to{stroke-dashoffset:0}}
 @keyframes rot{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+@keyframes modalin{from{opacity:0;transform:translateY(10px) scale(0.98)}to{opacity:1;transform:translateY(0) scale(1)}}
 
 /* ===== grid bento ===== */
 .grid{display:grid;grid-template-columns:2.2fr 1fr 1fr;grid-auto-rows:minmax(80px,auto);gap:10px}
-.mod{border-radius:12px;padding:14px 16px;position:relative;animation:fi 0.5s ease-out both;overflow:hidden;cursor:default}
+.mod{border-radius:12px;padding:14px 16px;position:relative;animation:fi 0.5s ease-out both;overflow:hidden}
 .mod::after{content:"";position:absolute;top:8px;right:8px;width:7px;height:7px}
 .mod::before{content:"";position:absolute;bottom:8px;left:8px;width:7px;height:7px}
 .mod:nth-child(1){animation-delay:0.05s}
@@ -64,46 +66,116 @@ a{color:inherit;text-decoration:none}
 .mod:nth-child(4){animation-delay:0.35s}
 .mod:nth-child(5){animation-delay:0.45s}
 .mod:nth-child(6){animation-delay:0.55s}
+.mod-clickable{cursor:pointer;transition:transform 0.15s, filter 0.15s}
+.mod-clickable:hover{filter:brightness(1.15)}
+.mod-clickable:active{transform:scale(0.99)}
 .mod-hero{grid-column:1/2;grid-row:1/3;padding:18px}
 .mod-lbl{font-family:var(--font-mono);font-size:10px;letter-spacing:2px;margin-bottom:6px}
 .mod-title{font-size:17px;font-weight:500;color:var(--text);margin-bottom:2px}
 .mod-hero .mod-title{font-size:24px}
-.mod-sub{font-size:12px;color:var(--text-dim)}
+.mod-sub{font-size:12px;color:var(--text-dim);line-height:1.5}
 .big-num{font-family:var(--font-mono);font-size:24px;font-weight:500;animation:cu 1s ease-out both}
+.chart-bars{display:flex;align-items:flex-end;gap:4px;height:38px;margin-top:12px}
+.chart-bars span{flex:1;border-radius:2px 2px 0 0;animation:fh 1.2s ease-out both}
+.pb{height:4px;border-radius:2px;overflow:hidden;margin-top:10px}
+.pb>i{display:block;height:100%;animation:fb 1.2s ease-out both}
+.ticks{display:flex;justify-content:space-between;margin-top:6px;font-family:var(--font-mono);font-size:10px;letter-spacing:1px;opacity:0.8}
+.btnrow{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
+.btn-mod{display:inline-block;padding:6px 12px;border:1px solid;background:transparent;border-radius:6px;font-family:var(--font-mono);font-size:11px;letter-spacing:1px;cursor:pointer}
+.rings{position:absolute;top:14px;right:14px;width:42px;height:42px;opacity:0.7}
+.rings svg{width:100%;height:100%;animation:rot 14s linear infinite}
 
-/* ===== color por módulo (bento HUD multicolor) ===== */
+/* ===== color por módulo ===== */
 .c-teal{background:#0E1F1D;border:1px solid #1D4D42}
 .c-teal .mod-lbl{color:#5DCAA5}.c-teal::after{border-top:1px solid #5DCAA5;border-right:1px solid #5DCAA5}.c-teal::before{border-bottom:1px solid #5DCAA5;border-left:1px solid #5DCAA5}
-.c-teal .mod-sub{color:#5DCAA5}.c-teal .big-num{color:#9FE1CB}
+.c-teal .mod-sub{color:#5DCAA5}.c-teal .big-num{color:#9FE1CB}.c-teal .chart-bars span{background:#1D9E75}.c-teal .pb{background:#1D4D42}.c-teal .pb>i{background:#5DCAA5}.c-teal .ticks{color:#5DCAA5}.c-teal .btn-mod{color:#5DCAA5;border-color:#1D4D42}.c-teal .btn-mod:hover{background:#0A1512}
 
 .c-pink{background:#1F1017;border:1px solid #5A2340}
 .c-pink .mod-lbl{color:#ED93B1}.c-pink::after{border-top:1px solid #ED93B1;border-right:1px solid #ED93B1}.c-pink::before{border-bottom:1px solid #ED93B1;border-left:1px solid #ED93B1}
-.c-pink .mod-sub{color:#ED93B1}
+.c-pink .mod-sub{color:#ED93B1}.c-pink .btn-mod{color:#ED93B1;border-color:#5A2340}
 
 .c-blue{background:#0A1930;border:1px solid #1B4478}
 .c-blue .mod-lbl{color:#85B7EB}.c-blue::after{border-top:1px solid #85B7EB;border-right:1px solid #85B7EB}.c-blue::before{border-bottom:1px solid #85B7EB;border-left:1px solid #85B7EB}
-.c-blue .mod-sub{color:#85B7EB}
+.c-blue .mod-sub{color:#85B7EB}.c-blue .btn-mod{color:#85B7EB;border-color:#1B4478}
 
 .c-amber{background:#231708;border:1px solid #7A4B0E}
 .c-amber .mod-lbl{color:#EF9F27}.c-amber::after{border-top:1px solid #EF9F27;border-right:1px solid #EF9F27}.c-amber::before{border-bottom:1px solid #EF9F27;border-left:1px solid #EF9F27}
-.c-amber .mod-sub{color:#EF9F27}
+.c-amber .mod-sub{color:#EF9F27}.c-amber .btn-mod{color:#EF9F27;border-color:#7A4B0E}
 
 .c-purple{background:#181530;border:1px solid #3E3782}
 .c-purple .mod-lbl{color:#AFA9EC}.c-purple::after{border-top:1px solid #AFA9EC;border-right:1px solid #AFA9EC}.c-purple::before{border-bottom:1px solid #AFA9EC;border-left:1px solid #AFA9EC}
-.c-purple .mod-sub{color:#AFA9EC}
+.c-purple .mod-sub{color:#AFA9EC}.c-purple .btn-mod{color:#AFA9EC;border-color:#3E3782}
 
 .c-coral{background:#20120C;border:1px solid #6E2E15}
 .c-coral .mod-lbl{color:#F0997B}.c-coral::after{border-top:1px solid #F0997B;border-right:1px solid #F0997B}.c-coral::before{border-bottom:1px solid #F0997B;border-left:1px solid #F0997B}
-.c-coral .mod-sub{color:#F0997B}
+.c-coral .mod-sub{color:#F0997B}.c-coral .chart-bars span{background:#D85A30}.c-coral .btn-mod{color:#F0997B;border-color:#6E2E15}
 
 /* ===== footer HUD ===== */
-.footbar{display:flex;justify-content:space-between;margin-top:16px;font-family:var(--font-mono);font-size:10px;color:var(--text-mute);letter-spacing:1px;padding:4px 2px}
+.footbar{display:flex;justify-content:space-between;margin-top:16px;font-family:var(--font-mono);font-size:10px;color:var(--text-mute);letter-spacing:1px;padding:4px 2px;flex-wrap:wrap;gap:8px}
 
-/* ===== estado de carga ===== */
-.loading{padding:3rem 1rem;text-align:center;color:var(--text-mute);font-family:var(--font-mono);font-size:12px;letter-spacing:2px}
-.error{padding:2rem 1rem;color:#F09595;font-family:var(--font-mono);font-size:12px}
+/* ===== páginas internas ===== */
+.page-head{display:flex;align-items:center;gap:14px;margin-bottom:20px}
+.page-title{font-size:20px;font-weight:500}
+.page-title .mono{font-family:var(--font-mono);font-size:11px;color:var(--text-mute);letter-spacing:2px;display:block;margin-bottom:2px}
+.btn-back{background:none;border:1px solid var(--border-dim);color:var(--text-dim);font-family:var(--font-mono);font-size:11px;padding:7px 12px;border-radius:6px;cursor:pointer;letter-spacing:1px}
+.btn-back:hover{border-color:var(--text-dim);color:var(--text)}
 
-/* ===== responsive móvil ===== */
+/* ===== organigrama ===== */
+#org-canvas .node{animation:pop 0.5s ease-out both}
+#org-canvas .ln{stroke:#2A4A38;stroke-width:1;fill:none;stroke-dasharray:240;animation:dr 1.4s ease-out forwards}
+#org-canvas .ln-k{stroke:#EF9F27;stroke-dasharray:5 3;opacity:0.85}
+#org-canvas text{font-family:var(--font-sans)}
+#org-canvas .mono{font-family:var(--font-mono)}
+
+/* ===== modal ===== */
+#modal-backdrop{position:fixed;inset:0;background:rgba(4,7,10,0.78);z-index:50;display:none;align-items:flex-start;justify-content:center;overflow-y:auto;padding:40px 16px}
+#modal-backdrop.open{display:flex}
+.modal{background:#0E141C;border:1px solid var(--border-dim);border-radius:14px;width:100%;max-width:680px;padding:22px;animation:modalin 0.28s ease-out;position:relative}
+.modal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.modal-head h2{font-size:18px;font-weight:500}
+.modal-head .mono{font-family:var(--font-mono);font-size:10px;letter-spacing:2px;color:var(--text-mute);display:block;margin-bottom:3px}
+.modal-x{background:none;border:1px solid var(--border-dim);color:var(--text-dim);width:30px;height:30px;border-radius:6px;cursor:pointer;font-size:16px;line-height:1}
+.modal-x:hover{color:var(--text);border-color:var(--text-dim)}
+table.data{width:100%;border-collapse:collapse;font-size:13px}
+table.data th{text-align:left;font-family:var(--font-mono);font-size:10px;letter-spacing:1px;color:var(--text-mute);padding:6px 8px;border-bottom:1px solid var(--border-dim);font-weight:400}
+table.data td{padding:8px;border-bottom:1px solid #141C26;color:var(--text);vertical-align:top}
+table.data tr:last-child td{border-bottom:none}
+.mini-pb{height:4px;background:#141C26;border-radius:2px;overflow:hidden;margin-top:4px;width:80px}
+.mini-pb>i{display:block;height:100%;background:#85B7EB}
+.row-actions{display:flex;gap:6px;justify-content:flex-end}
+.icon-btn{background:none;border:1px solid var(--border-dim);color:var(--text-dim);width:26px;height:26px;border-radius:5px;cursor:pointer;font-size:12px;line-height:1}
+.icon-btn:hover{color:var(--text);border-color:var(--text-dim)}
+.icon-btn.danger:hover{color:#F09595;border-color:#5A2020}
+input,select,textarea{width:100%;background:#0B1017;border:1px solid var(--border-dim);color:var(--text);font-family:inherit;font-size:13px;padding:8px 10px;border-radius:6px}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent-cyan)}
+label.fld{display:block;font-family:var(--font-mono);font-size:10px;letter-spacing:1px;color:var(--text-mute);margin:10px 0 4px}
+.btn-primary{background:#12303A;border:1px solid #1D6E7A;color:#8FE0F0;font-family:var(--font-mono);font-size:12px;letter-spacing:1px;padding:9px 16px;border-radius:7px;cursor:pointer;margin-top:16px}
+.btn-primary:hover{background:#164451}
+.btn-ghost{background:none;border:1px solid var(--border-dim);color:var(--text-dim);font-family:var(--font-mono);font-size:12px;letter-spacing:1px;padding:9px 16px;border-radius:7px;cursor:pointer;margin-top:16px}
+.btn-add{background:none;border:1px dashed var(--border-dim);color:var(--text-dim);font-family:var(--font-mono);font-size:11px;letter-spacing:1px;padding:8px 14px;border-radius:7px;cursor:pointer;width:100%;margin-top:12px}
+.btn-add:hover{border-color:var(--text-dim);color:var(--text)}
+.empty{text-align:center;color:var(--text-mute);font-family:var(--font-mono);font-size:12px;padding:24px 0}
+
+/* ===== buscador Ctrl+K ===== */
+#palette-backdrop{position:fixed;inset:0;background:rgba(4,7,10,0.7);z-index:60;display:none;justify-content:center;padding-top:12vh}
+#palette-backdrop.open{display:flex}
+.palette{background:#0E141C;border:1px solid #2A3A50;border-radius:12px;width:100%;max-width:600px;height:fit-content;max-height:70vh;overflow:hidden;display:flex;flex-direction:column}
+.palette-input{display:flex;align-items:center;gap:12px;padding:14px 18px;border-bottom:1px solid var(--border-dim)}
+.palette-input input{border:none;background:none;font-family:var(--font-mono);font-size:15px;padding:0}
+.palette-input input:focus{border:none}
+.palette-results{overflow-y:auto;padding:6px}
+.pres{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:7px;cursor:pointer}
+.pres:hover,.pres.sel{background:#1A2230}
+.pres .tag{font-family:var(--font-mono);font-size:9px;letter-spacing:1px;padding:3px 8px;border-radius:4px;min-width:78px;text-align:center}
+.pres .ptitle{font-size:14px;flex:1}
+.pres .psub{font-size:11px;color:var(--text-dim)}
+.tag-negocio{background:#0E1F1D;color:#5DCAA5}
+.tag-persona{background:#0A1930;color:#85B7EB}
+.tag-documento{background:#181530;color:#AFA9EC}
+.tag-curso{background:#0A1930;color:#85B7EB}
+.tag-empleo{background:#231708;color:#EF9F27}
+.tag-contacto{background:#20120C;color:#F0997B}
+
 @media (max-width:640px){
   .grid{grid-template-columns:1fr}
   .mod-hero{grid-column:auto;grid-row:auto}
@@ -118,10 +190,10 @@ a{color:inherit;text-decoration:none}
   <div class="topbar">
     <div class="topbar-left">
       <span class="pulse"></span>
-      <span>ANYELO.OS · v0.1</span>
+      <span>ANYELO.OS · v1.0</span>
     </div>
     <div class="topbar-right">
-      <button class="btn-search" onclick="App.abrirBuscador()" title="Buscar">
+      <button class="btn-search" onclick="App.abrirBuscador()">
         <span>Buscar</span><span class="kbd">Ctrl · K</span>
       </button>
       <span id="clock">— · —</span>
@@ -130,13 +202,22 @@ a{color:inherit;text-decoration:none}
 
   <div id="home">
     <div class="grid">
-      <div class="mod c-teal mod-hero"    data-modulo="jorisu"></div>
-      <div class="mod c-pink"             data-modulo="avellana"></div>
-      <div class="mod c-blue"             data-modulo="ulacit"></div>
-      <div class="mod c-amber"            data-modulo="empleo"></div>
-      <div class="mod c-purple"           data-modulo="vault"></div>
-      <div class="mod c-coral"            data-modulo="actividad" style="grid-column:2/4"></div>
+      <div class="mod c-teal mod-hero"  data-modulo="jorisu"></div>
+      <div class="mod c-pink"           data-modulo="avellana"></div>
+      <div class="mod c-blue"           data-modulo="ulacit"></div>
+      <div class="mod c-amber"          data-modulo="empleo"></div>
+      <div class="mod c-purple"         data-modulo="vault"></div>
+      <div class="mod c-coral"          data-modulo="actividad" style="grid-column:2/4"></div>
     </div>
+  </div>
+
+  <div id="pagina-organigrama" style="display:none">
+    <div class="page-head">
+      <button class="btn-back" onclick="App.volverHome()">← Volver</button>
+      <div class="page-title"><span class="mono">◆ ORGANIGRAMA</span>Inversiones JORISU S.R.L.</div>
+    </div>
+    <div id="org-canvas"></div>
+    <div class="footbar"><span id="org-foot">—</span><span>ACT · <span id="org-date"></span></span></div>
   </div>
 
   <div class="footbar">
@@ -146,14 +227,23 @@ a{color:inherit;text-decoration:none}
   </div>
 </main>
 
+<div id="modal-backdrop" onclick="if(event.target===this)App.cerrarModal()"></div>
+<div id="palette-backdrop" onclick="if(event.target===this)App.cerrarBuscador()"></div>
+
 <script>
+const esc = s => String(s==null?'':s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
 const App = {
   data: null,
+  costaPina: null,
+  avellana: null,
+  indice: [],
+  palSel: 0,
 
   async cargar() {
     this.renderReloj();
     document.querySelectorAll('.mod').forEach(el => {
-      el.innerHTML = '<div class="mod-lbl">' + (el.dataset.modulo || '').toUpperCase() + '</div><div class="mod-title" style="opacity:0.4">cargando…</div>';
+      el.innerHTML = '<div class="mod-lbl">' + esc((el.dataset.modulo||'').toUpperCase()) + '</div><div class="mod-title" style="opacity:0.4">cargando…</div>';
     });
     try {
       const r = await fetch('/api/proxy?accion=leer');
@@ -163,8 +253,15 @@ const App = {
       document.getElementById('foot-status').textContent = 'MÓDULOS · 6 ACTIVOS';
       this.render();
     } catch (e) {
-      this.mostrarError('sin conexión con el backend (' + e.message + ')');
+      this.mostrarError('sin conexión (' + e.message + ')');
     }
+  },
+
+  async api(payload) {
+    const r = await fetch('/api/proxy', {method:'POST', headers:{'content-type':'application/json'}, body: JSON.stringify(payload)});
+    const j = await r.json();
+    if (!j.ok) throw new Error(j.error || 'error');
+    return j;
   },
 
   render() {
@@ -179,47 +276,398 @@ const App = {
   renderReloj() {
     const el = document.getElementById('clock');
     const tick = () => {
-      const d = new Date(), p = n => String(n).padStart(2, '0');
-      el.textContent = p(d.getDate()) + '.' + p(d.getMonth() + 1) + '.' + d.getFullYear() + ' · ' + p(d.getHours()) + ':' + p(d.getMinutes()) + ':' + p(d.getSeconds());
+      const d = new Date(), p = n => String(n).padStart(2,'0');
+      el.textContent = p(d.getDate())+'.'+p(d.getMonth()+1)+'.'+d.getFullYear()+' · '+p(d.getHours())+':'+p(d.getMinutes())+':'+p(d.getSeconds());
     };
     tick(); setInterval(tick, 1000);
   },
 
-  // ===== módulos (los rellenan las Tasks 5-10) =====
-  renderJorisu()    { this.placeholderMod('jorisu',    'JORISU S.R.L.',    'módulo primario · próxima task'); },
-  renderAvellana()  { this.placeholderMod('avellana',  'Avellana Studio',  'próxima task'); },
-  renderUlacit()    { this.placeholderMod('ulacit',    'Universidad',      'próxima task'); },
-  renderEmpleo()    { this.placeholderMod('empleo',    'Empleo',           'próxima task'); },
-  renderVault()     { this.placeholderMod('vault',     'Vault',            'próxima task'); },
-  renderActividad() { this.placeholderMod('actividad', 'Actividad 7 días', 'próxima task'); },
-
-  placeholderMod(nombre, titulo, sub) {
-    const el = document.querySelector('[data-modulo="' + nombre + '"]');
-    if (!el) return;
-    el.innerHTML = '<div class="mod-lbl">' + nombre.toUpperCase() + '</div><div class="mod-title">' + titulo + '</div><div class="mod-sub">' + sub + '</div>';
+  // ===== JORISU (hero) =====
+  async renderJorisu() {
+    const el = document.querySelector('[data-modulo="jorisu"]');
+    const n = (this.data.negocios||[]).find(x => x.nombre === 'JORISU S.R.L.');
+    if (!n) { el.innerHTML = '<div class="mod-lbl">JORISU</div><div class="mod-title">no configurado</div>'; return; }
+    el.innerHTML =
+      '<div class="rings"><svg viewBox="0 0 42 42"><circle cx="21" cy="21" r="19" fill="none" stroke="#1D9E75" stroke-width="0.5"/><circle cx="21" cy="21" r="13" fill="none" stroke="#5DCAA5" stroke-width="0.5" stroke-dasharray="4 3"/><circle cx="21" cy="21" r="7" fill="none" stroke="#9FE1CB" stroke-width="0.5"/></svg></div>' +
+      '<div class="mod-lbl">MÓDULO PRIMARIO</div>' +
+      '<div class="mod-title">'+esc(n.nombre)+'</div>' +
+      '<div class="mod-sub">'+esc(n.rol)+' · '+esc(n.participacion)+'</div>' +
+      '<div id="jorisu-live" class="mod-sub" style="margin-top:14px;opacity:0.75">Leyendo Costa Piña en vivo…</div>' +
+      '<div class="btnrow">' +
+        '<a class="btn-mod" href="'+esc(n.endpoint)+'" target="_blank" rel="noopener">Abrir Costa Piña ↗</a>' +
+        '<button class="btn-mod" onclick="App.abrirModulo(\'organigrama\')">Ver organigrama</button>' +
+      '</div>';
+    try {
+      const j = await this.api({accion:'leer_dashboard_externo', id:'costa_pina'});
+      this.costaPina = j.data;
+      const proy = (j.data && j.data.proyectos) || [];
+      const activos = proy.filter(p => Array.isArray(p) ? true : (p.estado !== 'cerrado')).length;
+      const live = document.getElementById('jorisu-live');
+      if (live) live.innerHTML = '<span style="color:#9FE1CB;font-family:var(--font-mono)">'+proy.length+'</span> proyectos en Costa Piña · datos en vivo';
+    } catch(e) {
+      const live = document.getElementById('jorisu-live');
+      if (live) live.textContent = 'Costa Piña: no se pudo leer ahora';
+    }
   },
 
-  recargar() { return this.cargar(); },
+  // ===== Avellana =====
+  async renderAvellana() {
+    const el = document.querySelector('[data-modulo="avellana"]');
+    const n = (this.data.negocios||[]).find(x => x.nombre === 'Avellana Studio');
+    if (!n) { el.innerHTML = '<div class="mod-lbl">AVELLANA</div><div class="mod-title">no configurado</div>'; return; }
+    el.innerHTML =
+      '<div class="mod-lbl">AVELLANA</div>' +
+      '<div class="mod-title">Studio</div>' +
+      '<div class="mod-sub">'+esc(n.participacion)+' · en vivo</div>' +
+      '<div id="avellana-live" class="mod-sub" style="margin-top:8px;font-size:11px;opacity:0.75">cargando…</div>' +
+      '<div class="btnrow"><a class="btn-mod" href="'+esc(n.endpoint)+'" target="_blank" rel="noopener">Abrir ↗</a></div>';
+    try {
+      const j = await this.api({accion:'leer_dashboard_externo', id:'avellana'});
+      this.avellana = j.data;
+      const prod = (j.data && j.data.productos || []).length;
+      const ventas = (j.data && j.data.ventas || []).length;
+      const live = document.getElementById('avellana-live');
+      if (live) live.textContent = prod+' productos · '+ventas+' ventas';
+    } catch(e) {
+      const live = document.getElementById('avellana-live');
+      if (live) live.textContent = 'sin conexión';
+    }
+  },
 
+  // ===== ULACIT =====
+  renderUlacit() {
+    const el = document.querySelector('[data-modulo="ulacit"]');
+    const es = this.data.estudios || [];
+    const carreras = [...new Set(es.map(e => e.carrera))].filter(Boolean);
+    const activos = es.filter(e => e.estado === 'en curso').length;
+    el.className = 'mod c-blue mod-clickable';
+    el.innerHTML =
+      '<div class="mod-lbl">ULACIT</div>' +
+      '<div class="mod-title">'+carreras.length+' carrera'+(carreras.length===1?'':'s')+'</div>' +
+      '<div class="mod-sub">'+activos+' cursos activos</div>';
+    el.onclick = () => this.abrirModalUlacit();
+  },
+
+  // ===== Empleo =====
+  renderEmpleo() {
+    const el = document.querySelector('[data-modulo="empleo"]');
+    const emp = this.data.empleo || [];
+    const activas = emp.filter(e => ['aplicado','entrevista','pendiente'].includes(e.estado)).length;
+    const prox = emp.find(e => e.estado === 'entrevista');
+    el.className = 'mod c-amber mod-clickable';
+    el.innerHTML =
+      '<div class="mod-lbl">EMPLEO</div>' +
+      '<div class="mod-title">'+activas+' activa'+(activas===1?'':'s')+'</div>' +
+      '<div class="mod-sub">'+(prox ? 'entrevista: '+esc(prox.empresa) : (emp.length? 'sin entrevistas':'agregar aplicación'))+'</div>';
+    el.onclick = () => this.abrirModalEmpleo();
+  },
+
+  // ===== Vault =====
+  renderVault() {
+    const el = document.querySelector('[data-modulo="vault"]');
+    const v = this.data.vault || [];
+    el.className = 'mod c-purple mod-clickable';
+    el.innerHTML =
+      '<div class="mod-lbl">VAULT</div>' +
+      '<div class="mod-title">'+v.length+' doc'+(v.length===1?'':'s')+'</div>' +
+      '<div class="mod-sub">'+(v.length? 'en Drive privado':'subir documentos')+'</div>';
+    el.onclick = () => this.abrirModalVault();
+  },
+
+  // ===== Actividad 7 días =====
+  renderActividad() {
+    const el = document.querySelector('[data-modulo="actividad"]');
+    const act = this.data.actividad || [];
+    const hoy = new Date();
+    const dias = [];
+    for (let i=6;i>=0;i--){
+      const d = new Date(hoy); d.setDate(d.getDate()-i);
+      const key = d.toISOString().slice(0,10);
+      dias.push(act.filter(a => String(a.timestamp).slice(0,10)===key).length);
+    }
+    const max = Math.max(1, ...dias);
+    const bars = dias.map(c => '<span style="height:'+Math.round(c/max*100)+'%"></span>').join('');
+    const total = dias.reduce((s,c)=>s+c,0);
+    el.innerHTML =
+      '<div class="mod-lbl">ACTIVIDAD · ÚLTIMOS 7 DÍAS</div>' +
+      '<div class="chart-bars">'+bars+'</div>' +
+      '<div class="mod-sub" style="margin-top:8px">'+total+' acciones esta semana</div>';
+  },
+
+  // ===== navegación =====
   abrirModulo(nombre) {
     document.getElementById('home').style.display = 'none';
-    const pag = document.getElementById('pagina-' + nombre);
+    const pag = document.getElementById('pagina-'+nombre);
     if (pag) pag.style.display = 'block';
+    if (nombre === 'organigrama') this.renderOrganigrama();
+    window.scrollTo(0,0);
   },
-
   volverHome() {
-    document.querySelectorAll('[id^="pagina-"]').forEach(p => p.style.display = 'none');
+    document.querySelectorAll('[id^="pagina-"]').forEach(p => p.style.display='none');
     document.getElementById('home').style.display = 'block';
   },
 
-  abrirBuscador() {
-    alert('Buscador global: se activa en la Task 12 del plan.');
+  // ===== organigrama SVG =====
+  renderOrganigrama() {
+    const nodos = this.data.organigrama || [];
+    const raiz = nodos.find(n => !n.padre_id);
+    const cv = document.getElementById('org-canvas');
+    if (!raiz) { cv.innerHTML = '<div class="empty">Sin datos de organigrama</div>'; return; }
+    const socios = nodos.filter(n => n.tipo==='socio');
+    const proyectos = nodos.filter(n => n.tipo==='proyecto');
+    const invs = nodos.filter(n => n.tipo==='inversionista');
+    const W=720, H=400;
+    const px = (total,i) => 40 + (W-80)*(i+0.5)/total;
+
+    const nodo = (n,x,y,w,h,fill,stroke,delay) =>
+      '<g class="node" style="animation-delay:'+delay+'s">' +
+      '<rect x="'+(x-w/2)+'" y="'+y+'" width="'+w+'" height="'+h+'" rx="8" fill="'+fill+'" stroke="'+stroke+'" stroke-width="1"/>' +
+      '<text x="'+x+'" y="'+(y+20)+'" text-anchor="middle" font-size="12" font-weight="500" fill="#E6ECF2">'+esc(n.nombre)+'</text>' +
+      (n.participacion? '<text x="'+x+'" y="'+(y+36)+'" text-anchor="middle" class="mono" font-size="9" fill="'+stroke+'">'+esc(n.participacion)+'</text>':'') +
+      (n.notas? '<text x="'+x+'" y="'+(y+(n.participacion?50:36))+'" text-anchor="middle" class="mono" font-size="8" fill="#5A7A9A">'+esc(n.notas)+'</text>':'') +
+      '</g>';
+    const linea = (x1,y1,x2,y2,delay,k) => '<path class="ln'+(k?' ln-k':'')+'" style="animation-delay:'+delay+'s" d="M '+x1+' '+y1+' L '+x2+' '+y2+'"/>';
+
+    let s = '<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto">';
+    s += nodo(raiz, W/2, 10, 210, 50, '#0E1F1D', '#5DCAA5', 0.1);
+    socios.forEach((n,i)=>{ s += linea(W/2, 60, px(socios.length,i), 105, 0.3+i*0.05); });
+    socios.forEach((n,i)=> s += nodo(n, px(socios.length,i), 105, 165, 58, '#0A1930', '#85B7EB', 0.4+i*0.12));
+    proyectos.forEach((n,i)=>{ s += linea(W/2, 60, px(proyectos.length,i), 235, 0.9+i*0.05); });
+    proyectos.forEach((n,i)=> s += nodo(n, px(proyectos.length,i), 235, 165, 62, '#0E1F1D', '#5DCAA5', 1.0+i*0.1));
+    invs.forEach((inv,i)=>{
+      const padre = proyectos.find(p => String(p.id)===String(inv.padre_id));
+      const pxi = padre ? px(proyectos.length, proyectos.indexOf(padre)) : W/2;
+      const x = W/2;
+      s += linea(pxi, 297, x, 330, 1.5+i*0.05, true);
+      s += nodo(inv, x, 330, 220, 50, '#231708', '#EF9F27', 1.55+i*0.1);
+    });
+    s += '</svg>';
+    cv.innerHTML = s;
+    document.getElementById('org-foot').textContent = '◆ '+socios.length+' SOCIOS · '+proyectos.length+' PROYECTOS · '+invs.length+' INVERSIONISTA';
+    document.getElementById('org-date').textContent = new Date().toLocaleDateString('es-CR');
   },
 
+  // ===== modal genérico =====
+  abrirModal(html) {
+    const bd = document.getElementById('modal-backdrop');
+    bd.innerHTML = '<div class="modal">'+html+'</div>';
+    bd.classList.add('open');
+  },
+  cerrarModal() {
+    const bd = document.getElementById('modal-backdrop');
+    bd.classList.remove('open');
+    bd.innerHTML = '';
+  },
+
+  // ===== ULACIT modal =====
+  abrirModalUlacit() {
+    const es = this.data.estudios || [];
+    let rows = es.length ? es.map(e =>
+      '<tr><td>'+esc(e.carrera)+'</td><td>'+esc(e.curso)+'<div class="mini-pb"><i style="width:'+(Number(e.avance)||0)+'%"></i></div></td>' +
+      '<td>'+esc(e.semestre)+'</td><td>'+esc(e.estado)+'</td>' +
+      '<td class="row-actions">'+
+        '<button class="icon-btn" onclick=\'App.formCurso('+JSON.stringify(e).replace(/'/g,"&#39;")+')\'>✎</button>'+
+        '<button class="icon-btn danger" onclick="App.eliminarCurso('+e.id+')">✕</button>'+
+      '</td></tr>').join('')
+      : '<tr><td colspan="5" class="empty">Sin cursos aún</td></tr>';
+    this.abrirModal(
+      '<div class="modal-head"><div><span class="mono">◆ UNIVERSIDAD</span><h2>ULACIT — 2 carreras</h2></div><button class="modal-x" onclick="App.cerrarModal()">✕</button></div>' +
+      '<table class="data"><thead><tr><th>Carrera</th><th>Curso</th><th>Semestre</th><th>Estado</th><th></th></tr></thead><tbody>'+rows+'</tbody></table>' +
+      '<button class="btn-add" onclick="App.formCurso()">+ Agregar curso</button>'
+    );
+  },
+  formCurso(e) {
+    e = e || {};
+    this.abrirModal(
+      '<div class="modal-head"><div><span class="mono">◆ ULACIT</span><h2>'+(e.id?'Editar':'Nuevo')+' curso</h2></div><button class="modal-x" onclick="App.abrirModalUlacit()">✕</button></div>' +
+      '<label class="fld">CARRERA</label><select id="f-carrera"><option'+(e.carrera==='Administracion de Empresas'?' selected':'')+'>Administracion de Empresas</option><option'+(e.carrera==='Contaduria Publica'?' selected':'')+'>Contaduria Publica</option></select>' +
+      '<label class="fld">CURSO</label><input id="f-curso" value="'+esc(e.curso||'')+'" placeholder="Nombre del curso">' +
+      '<label class="fld">AVANCE (%)</label><input id="f-avance" type="number" min="0" max="100" value="'+(e.avance!=null?esc(e.avance):0)+'">' +
+      '<label class="fld">SEMESTRE / CUATRIMESTRE</label><input id="f-semestre" value="'+esc(e.semestre||'')+'" placeholder="2026 C1">' +
+      '<label class="fld">ESTADO</label><select id="f-estado"><option value="en curso"'+(e.estado==='en curso'?' selected':'')+'>en curso</option><option value="aprobado"'+(e.estado==='aprobado'?' selected':'')+'>aprobado</option><option value="pendiente"'+(e.estado==='pendiente'?' selected':'')+'>pendiente</option></select>' +
+      '<label class="fld">NOTAS</label><input id="f-notas" value="'+esc(e.notas||'')+'">' +
+      '<div><button class="btn-primary" onclick="App.guardarCurso('+(e.id||'null')+')">Guardar</button> <button class="btn-ghost" onclick="App.abrirModalUlacit()">Cancelar</button></div>'
+    );
+  },
+  async guardarCurso(id) {
+    const datos = {
+      carrera: document.getElementById('f-carrera').value,
+      curso: document.getElementById('f-curso').value,
+      avance: document.getElementById('f-avance').value,
+      semestre: document.getElementById('f-semestre').value,
+      estado: document.getElementById('f-estado').value,
+      notas: document.getElementById('f-notas').value
+    };
+    try {
+      await this.api(id ? {accion:'editar_fila',hoja:'Estudios',id,datos} : {accion:'agregar_fila',hoja:'Estudios',datos});
+      await this.recargar(); this.abrirModalUlacit();
+    } catch(e){ alert('Error: '+e.message); }
+  },
+  async eliminarCurso(id) {
+    if (!confirm('¿Eliminar este curso?')) return;
+    try { await this.api({accion:'eliminar_fila',hoja:'Estudios',id}); await this.recargar(); this.abrirModalUlacit(); }
+    catch(e){ alert('Error: '+e.message); }
+  },
+
+  // ===== Empleo modal =====
+  abrirModalEmpleo() {
+    const emp = this.data.empleo || [];
+    let rows = emp.length ? emp.map(e =>
+      '<tr><td>'+esc(e.empresa)+'</td><td>'+esc(e.puesto)+'</td><td>'+esc(e.fecha_aplicacion)+'</td><td>'+esc(e.estado)+'</td>' +
+      '<td class="row-actions">'+
+        '<button class="icon-btn" onclick=\'App.formEmpleo('+JSON.stringify(e).replace(/'/g,"&#39;")+')\'>✎</button>'+
+        '<button class="icon-btn danger" onclick="App.eliminarEmpleo('+e.id+')">✕</button>'+
+      '</td></tr>').join('')
+      : '<tr><td colspan="5" class="empty">Sin aplicaciones aún</td></tr>';
+    this.abrirModal(
+      '<div class="modal-head"><div><span class="mono">◆ EMPLEO</span><h2>Búsqueda de empleo</h2></div><button class="modal-x" onclick="App.cerrarModal()">✕</button></div>' +
+      '<table class="data"><thead><tr><th>Empresa</th><th>Puesto</th><th>Fecha</th><th>Estado</th><th></th></tr></thead><tbody>'+rows+'</tbody></table>' +
+      '<button class="btn-add" onclick="App.formEmpleo()">+ Agregar aplicación</button>'
+    );
+  },
+  formEmpleo(e) {
+    e = e || {};
+    const opt = (v,l) => '<option value="'+v+'"'+(e.estado===v?' selected':'')+'>'+l+'</option>';
+    this.abrirModal(
+      '<div class="modal-head"><div><span class="mono">◆ EMPLEO</span><h2>'+(e.id?'Editar':'Nueva')+' aplicación</h2></div><button class="modal-x" onclick="App.abrirModalEmpleo()">✕</button></div>' +
+      '<label class="fld">EMPRESA</label><input id="f-empresa" value="'+esc(e.empresa||'')+'">' +
+      '<label class="fld">PUESTO</label><input id="f-puesto" value="'+esc(e.puesto||'')+'">' +
+      '<label class="fld">FECHA DE APLICACIÓN</label><input id="f-fecha" type="date" value="'+esc(e.fecha_aplicacion||'')+'">' +
+      '<label class="fld">ESTADO</label><select id="f-estado">'+opt('aplicado','aplicado')+opt('entrevista','entrevista')+opt('pendiente','pendiente')+opt('rechazado','rechazado')+opt('aceptado','aceptado')+'</select>' +
+      '<label class="fld">FUENTE</label><input id="f-fuente" value="'+esc(e.fuente||'')+'" placeholder="LinkedIn, referido…">' +
+      '<label class="fld">NOTAS</label><input id="f-notas" value="'+esc(e.notas||'')+'">' +
+      '<div><button class="btn-primary" onclick="App.guardarEmpleo('+(e.id||'null')+')">Guardar</button> <button class="btn-ghost" onclick="App.abrirModalEmpleo()">Cancelar</button></div>'
+    );
+  },
+  async guardarEmpleo(id) {
+    const datos = {
+      empresa: document.getElementById('f-empresa').value,
+      puesto: document.getElementById('f-puesto').value,
+      fecha_aplicacion: document.getElementById('f-fecha').value,
+      estado: document.getElementById('f-estado').value,
+      fuente: document.getElementById('f-fuente').value,
+      notas: document.getElementById('f-notas').value
+    };
+    try {
+      await this.api(id ? {accion:'editar_fila',hoja:'Empleo',id,datos} : {accion:'agregar_fila',hoja:'Empleo',datos});
+      await this.recargar(); this.abrirModalEmpleo();
+    } catch(e){ alert('Error: '+e.message); }
+  },
+  async eliminarEmpleo(id) {
+    if (!confirm('¿Eliminar esta aplicación?')) return;
+    try { await this.api({accion:'eliminar_fila',hoja:'Empleo',id}); await this.recargar(); this.abrirModalEmpleo(); }
+    catch(e){ alert('Error: '+e.message); }
+  },
+
+  // ===== Vault modal =====
+  abrirModalVault() {
+    const v = this.data.vault || [];
+    let cards = v.length ? '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px">' + v.map(d =>
+      '<div style="border:1px solid var(--border-dim);border-radius:10px;padding:12px;position:relative">' +
+      '<div style="font-family:var(--font-mono);font-size:9px;letter-spacing:1px;color:#AFA9EC">'+esc((d.tipo||'DOC').toUpperCase())+'</div>' +
+      '<div style="font-size:13px;margin:6px 0;word-break:break-word">'+esc(d.nombre)+'</div>' +
+      '<div style="font-size:10px;color:var(--text-mute);font-family:var(--font-mono)">'+esc(d.fecha)+' · '+esc(d.tamano_kb)+' KB</div>' +
+      '<div class="btnrow" style="margin-top:10px">' +
+        '<a class="btn-mod" style="color:#AFA9EC;border-color:#3E3782" href="'+esc(d.drive_link)+'" target="_blank" rel="noopener">Abrir ↗</a>' +
+        '<button class="icon-btn danger" onclick="App.eliminarDoc('+d.id+')">✕</button>' +
+      '</div></div>').join('') + '</div>'
+      : '<div class="empty">Vault vacío — subí tu cédula, personería, contratos, CV…</div>';
+    this.abrirModal(
+      '<div class="modal-head"><div><span class="mono">◆ VAULT · DRIVE PRIVADO</span><h2>Documentos ('+v.length+')</h2></div><button class="modal-x" onclick="App.cerrarModal()">✕</button></div>' +
+      cards +
+      '<label class="fld">SUBIR DOCUMENTO</label>' +
+      '<input type="file" id="f-file">' +
+      '<label class="fld">TIPO</label><input id="f-tipo" placeholder="Cédula, Personería, Contrato, CV…">' +
+      '<label class="fld">ETIQUETAS (opcional)</label><input id="f-tags" placeholder="JORISU, legal…">' +
+      '<div id="up-status" style="font-family:var(--font-mono);font-size:11px;color:var(--text-mute);margin-top:8px"></div>' +
+      '<div><button class="btn-primary" onclick="App.subirDoc()">Subir a Drive</button></div>'
+    );
+  },
+  async subirDoc() {
+    const inp = document.getElementById('f-file');
+    if (!inp.files || !inp.files[0]) { alert('Elegí un archivo primero'); return; }
+    const file = inp.files[0];
+    const st = document.getElementById('up-status');
+    st.textContent = 'Leyendo archivo…';
+    try {
+      const base64 = await new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(r.result.split(',')[1]); r.onerror=rej; r.readAsDataURL(file); });
+      st.textContent = 'Subiendo a Drive…';
+      await this.api({accion:'subir_documento', datos:{nombre:file.name, tipo:document.getElementById('f-tipo').value||'Documento', tags:document.getElementById('f-tags').value, mime:file.type||'application/octet-stream', base64}});
+      await this.recargar(); this.abrirModalVault();
+    } catch(e){ st.textContent = 'Error: '+e.message; }
+  },
+  async eliminarDoc(id) {
+    if (!confirm('¿Eliminar este documento? Se borra del Sheet y de Drive.')) return;
+    try { await this.api({accion:'eliminar_documento',id}); await this.recargar(); this.abrirModalVault(); }
+    catch(e){ alert('Error: '+e.message); }
+  },
+
+  // ===== Buscador Ctrl+K =====
+  construirIndice() {
+    const idx = [];
+    (this.data.negocios||[]).forEach(n => idx.push({tipo:'negocio', titulo:n.nombre, sub:(n.rol||'')+' · '+(n.participacion||''), fn:()=>window.open(n.endpoint,'_blank')}));
+    (this.data.organigrama||[]).forEach(o => idx.push({tipo:'persona', titulo:o.nombre, sub:o.tipo+(o.participacion?' · '+o.participacion:''), fn:()=>{this.cerrarBuscador();this.abrirModulo('organigrama');}}));
+    (this.data.estudios||[]).forEach(e => idx.push({tipo:'curso', titulo:e.curso, sub:e.carrera+' · '+(e.avance||0)+'%', fn:()=>{this.cerrarBuscador();this.abrirModalUlacit();}}));
+    (this.data.empleo||[]).forEach(e => idx.push({tipo:'empleo', titulo:e.empresa, sub:(e.puesto||'')+' · '+(e.estado||''), fn:()=>{this.cerrarBuscador();this.abrirModalEmpleo();}}));
+    (this.data.vault||[]).forEach(v => idx.push({tipo:'documento', titulo:v.nombre, sub:(v.tipo||'')+' · '+(v.fecha||''), fn:()=>window.open(v.drive_link,'_blank')}));
+    (this.data.contactos||[]).forEach(c => idx.push({tipo:'contacto', titulo:c.nombre, sub:(c.rol||'')+(c.organizacion?' · '+c.organizacion:''), fn:()=>alert(c.nombre+'\n'+(c.rol||'')+'\n'+(c.email||'')+'\n'+(c.telefono||''))}));
+    return idx;
+  },
+  abrirBuscador() {
+    this.indice = this.construirIndice();
+    this.palSel = 0;
+    const bd = document.getElementById('palette-backdrop');
+    bd.innerHTML =
+      '<div class="palette">' +
+      '<div class="palette-input"><span style="color:var(--accent-cyan)">⌕</span><input id="pal-in" placeholder="Buscar negocios, personas, documentos, cursos…" autocomplete="off"></div>' +
+      '<div class="palette-results" id="pal-res"></div></div>';
+    bd.classList.add('open');
+    const inp = document.getElementById('pal-in');
+    inp.addEventListener('input', () => this.buscar(inp.value));
+    inp.addEventListener('keydown', (e) => this.palKey(e));
+    setTimeout(()=>inp.focus(), 30);
+    this.buscar('');
+  },
+  cerrarBuscador() {
+    const bd = document.getElementById('palette-backdrop');
+    bd.classList.remove('open'); bd.innerHTML='';
+  },
+  buscar(q) {
+    q = q.toLowerCase().trim();
+    let res = q ? this.indice.filter(i => (i.titulo||'').toLowerCase().includes(q) || (i.sub||'').toLowerCase().includes(q)) : this.indice;
+    res = res.slice(0,20);
+    this.palResultados = res;
+    this.palSel = 0;
+    const box = document.getElementById('pal-res');
+    if (!res.length) { box.innerHTML = '<div class="empty">Sin resultados</div>'; return; }
+    box.innerHTML = res.map((r,i) =>
+      '<div class="pres'+(i===0?' sel':'')+'" data-i="'+i+'" onclick="App.ejecutarResultado('+i+')">' +
+      '<span class="tag tag-'+r.tipo+'">'+r.tipo.toUpperCase()+'</span>' +
+      '<div style="flex:1"><div class="ptitle">'+esc(r.titulo)+'</div><div class="psub">'+esc(r.sub)+'</div></div>' +
+      '</div>').join('');
+  },
+  palKey(e) {
+    const res = this.palResultados || [];
+    if (e.key === 'Escape') { this.cerrarBuscador(); }
+    else if (e.key === 'ArrowDown') { e.preventDefault(); this.palSel = Math.min(this.palSel+1, res.length-1); this.palHighlight(); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); this.palSel = Math.max(this.palSel-1, 0); this.palHighlight(); }
+    else if (e.key === 'Enter') { e.preventDefault(); this.ejecutarResultado(this.palSel); }
+  },
+  palHighlight() {
+    document.querySelectorAll('#pal-res .pres').forEach((el,i)=>el.classList.toggle('sel', i===this.palSel));
+    const sel = document.querySelector('#pal-res .pres.sel');
+    if (sel) sel.scrollIntoView({block:'nearest'});
+  },
+  ejecutarResultado(i) {
+    const r = (this.palResultados||[])[i];
+    if (r && r.fn) r.fn();
+  },
+
+  recargar() { return this.cargar(); },
   mostrarError(msg) {
     document.getElementById('foot-status').textContent = 'ERROR';
     document.querySelectorAll('.mod').forEach(el => {
-      el.innerHTML = '<div class="mod-lbl">' + (el.dataset.modulo || '').toUpperCase() + '</div><div class="mod-title" style="opacity:0.4">sin datos</div><div class="mod-sub">' + msg + '</div>';
+      el.innerHTML = '<div class="mod-lbl">'+esc((el.dataset.modulo||'').toUpperCase())+'</div><div class="mod-title" style="opacity:0.4">sin datos</div><div class="mod-sub">'+esc(msg)+'</div>';
     });
   }
 };
@@ -227,7 +675,6 @@ const App = {
 document.addEventListener('keydown', e => {
   if ((e.ctrlKey || e.metaKey) && e.key === 'k') { e.preventDefault(); App.abrirBuscador(); }
 });
-
 window.addEventListener('DOMContentLoaded', () => App.cargar());
 </script>
 </body>
