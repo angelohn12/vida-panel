@@ -176,11 +176,30 @@ label.fld{display:block;font-family:var(--font-mono);font-size:10px;letter-spaci
 .tag-empleo{background:#231708;color:#EF9F27}
 .tag-contacto{background:#20120C;color:#F0997B}
 
+/* ===== nav toggle Mapa/Panel ===== */
+.nav-toggle{display:flex;gap:4px;background:#0E141C;border:1px solid var(--border-dim);border-radius:8px;padding:3px}
+.nav-btn{background:none;border:none;color:var(--text-mute);font-family:var(--font-mono);font-size:11px;letter-spacing:1px;padding:5px 12px;border-radius:6px;cursor:pointer}
+.nav-btn.active{background:#16202C;color:var(--accent-cyan)}
+.nav-btn:hover{color:var(--text)}
+
+/* ===== mapa de vida ===== */
+#mapa-canvas{width:100%;overflow:hidden}
+#mapa-canvas svg{width:100%;height:auto;display:block}
+#mapa-canvas .mnode{cursor:pointer;transition:transform .18s ease;transform-box:fill-box;transform-origin:center}
+#mapa-canvas .mnode:hover{transform:scale(1.07)}
+#mapa-canvas .mnode:hover rect,#mapa-canvas .mnode:hover circle{filter:brightness(1.35)}
+#mapa-canvas .mline{fill:none;stroke-dasharray:400;animation:dr 1.6s ease-out forwards}
+#mapa-canvas .mtxt{font-family:var(--font-sans);pointer-events:none}
+#mapa-canvas .mmono{font-family:var(--font-mono);pointer-events:none}
+#mapa-canvas .ring{animation:rot 22s linear infinite;transform-box:fill-box;transform-origin:center}
+.node-pop{animation:pop 0.55s ease-out both}
+
 @media (max-width:640px){
   .grid{grid-template-columns:1fr}
   .mod-hero{grid-column:auto;grid-row:auto}
   .topbar{font-size:10px}
   .btn-search .kbd{display:none}
+  .nav-btn{padding:5px 9px}
 }
 </style>
 </head>
@@ -192,6 +211,10 @@ label.fld{display:block;font-family:var(--font-mono);font-size:10px;letter-spaci
       <span class="pulse"></span>
       <span>ANYELO.OS · v1.0</span>
     </div>
+    <div class="nav-toggle">
+      <button id="nav-mapa" class="nav-btn active" onclick="App.verMapa()">◆ Mapa</button>
+      <button id="nav-panel" class="nav-btn" onclick="App.verPanel()">▦ Panel</button>
+    </div>
     <div class="topbar-right">
       <button class="btn-search" onclick="App.abrirBuscador()">
         <span>Buscar</span><span class="kbd">Ctrl · K</span>
@@ -200,7 +223,12 @@ label.fld{display:block;font-family:var(--font-mono);font-size:10px;letter-spaci
     </div>
   </div>
 
-  <div id="home">
+  <div id="mapa">
+    <div id="mapa-canvas"></div>
+    <div class="footbar"><span>◆ MAPA DE VIDA</span><span id="mapa-foot">—</span><span>ANYELO.OS</span></div>
+  </div>
+
+  <div id="home" style="display:none">
     <div class="grid">
       <div class="mod c-teal mod-hero"  data-modulo="jorisu"></div>
       <div class="mod c-pink"           data-modulo="avellana"></div>
@@ -265,12 +293,127 @@ const App = {
   },
 
   render() {
+    this.renderMapa();
     this.renderJorisu();
     this.renderAvellana();
     this.renderUlacit();
     this.renderEmpleo();
     this.renderVault();
     this.renderActividad();
+  },
+
+  // ===== MAPA DE VIDA (radial animado) =====
+  vista: 'mapa',
+  _mapH: [],
+  verMapa() {
+    this.vista = 'mapa';
+    document.querySelectorAll('[id^="pagina-"]').forEach(p=>p.style.display='none');
+    document.getElementById('home').style.display = 'none';
+    document.getElementById('mapa').style.display = 'block';
+    document.getElementById('nav-mapa').classList.add('active');
+    document.getElementById('nav-panel').classList.remove('active');
+    this.renderMapa();
+    window.scrollTo(0,0);
+  },
+  verPanel() {
+    this.vista = 'panel';
+    document.querySelectorAll('[id^="pagina-"]').forEach(p=>p.style.display='none');
+    document.getElementById('mapa').style.display = 'none';
+    document.getElementById('home').style.display = 'block';
+    document.getElementById('nav-panel').classList.add('active');
+    document.getElementById('nav-mapa').classList.remove('active');
+    window.scrollTo(0,0);
+  },
+  mapClick(i){ const h=this._mapH[i]; if(h) h(); },
+
+  renderMapa() {
+    const cv = document.getElementById('mapa-canvas');
+    if (!cv) return;
+    const W=900, H=620, cx=450, cy=310, R1=160, R2=290;
+    const rad = d => d*Math.PI/180;
+    const negocios = this.data.negocios||[];
+    const estudios = this.data.estudios||[];
+    const carreras = [...new Set(estudios.map(e=>e.carrera))].filter(Boolean);
+    const empleo = this.data.empleo||[];
+    const empActivas = empleo.filter(e=>['aplicado','entrevista','pendiente'].includes(e.estado)).length;
+    const vaultN = (this.data.vault||[]).length;
+
+    this._mapH = [];
+    const H_ = fn => { this._mapH.push(fn); return this._mapH.length-1; };
+    const short = s => String(s).replace(' S.R.L.','').replace('Administracion de Empresas','Admin. Empresas').replace('Contaduria Publica','Contaduría');
+
+    const cats = [
+      { label:'NEGOCIOS', color:'#5DCAA5', bg:'#0E1F1D', angle:315,
+        leaves: negocios.map(n=>({label:short(n.nombre), sub:n.participacion, fn:()=> n.nombre.includes('JORISU')? this.abrirModulo('organigrama') : window.open(n.endpoint,'_blank') })),
+        fn:()=>this.verPanel() },
+      { label:'EDUCACIÓN', color:'#85B7EB', bg:'#0A1930', angle:225,
+        leaves: carreras.map(c=>({label:short(c), sub:'ULACIT', fn:()=>this.abrirModalUlacit()})),
+        fn:()=>this.abrirModalUlacit() },
+      { label:'EMPLEO', color:'#EF9F27', bg:'#231708', angle:135,
+        leaves: [ empActivas? {label:empActivas+' aplicaciones', sub:'en proceso', fn:()=>this.abrirModalEmpleo()} : {label:'En búsqueda', sub:'agregar', fn:()=>this.abrirModalEmpleo()} ],
+        fn:()=>this.abrirModalEmpleo() },
+      { label:'PATRIMONIO', color:'#AFA9EC', bg:'#181530', angle:45,
+        leaves: [{label:vaultN+' documentos', sub:'Vault', fn:()=>this.abrirModalVault()}],
+        fn:()=>this.abrirModalVault() },
+    ];
+
+    let s = '<svg viewBox="0 0 '+W+' '+H+'">';
+
+    // líneas centro -> categorías
+    cats.forEach((c,i)=>{
+      const x = cx + R1*Math.cos(rad(c.angle)), y = cy + R1*Math.sin(rad(c.angle));
+      s += '<path class="mline" style="stroke:'+c.color+';opacity:0.4;animation-delay:'+(0.4+i*0.1)+'s" d="M '+cx+' '+cy+' L '+x+' '+y+'"/>';
+    });
+
+    // líneas categoría -> hojas
+    cats.forEach((c,ci)=>{
+      const cxx = cx + R1*Math.cos(rad(c.angle)), cyy = cy + R1*Math.sin(rad(c.angle));
+      const k = c.leaves.length, step = 20;
+      c.leaves.forEach((lf,j)=>{
+        const la = c.angle + step*(j-(k-1)/2);
+        const lx = cx + R2*Math.cos(rad(la)), ly = cy + R2*Math.sin(rad(la));
+        s += '<path class="mline" style="stroke:'+c.color+';opacity:0.25;animation-delay:'+(1.2+ci*0.1+j*0.05)+'s" d="M '+cxx+' '+cyy+' L '+lx+' '+ly+'"/>';
+      });
+    });
+
+    // nodo central ANYELO
+    const centH = H_(()=>this.verPanel());
+    s += '<g class="mnode node-pop" style="animation-delay:0.1s" onclick="App.mapClick('+centH+')">';
+    s += '<circle class="ring" cx="'+cx+'" cy="'+cy+'" r="66" fill="none" stroke="#1D4D42" stroke-width="1" stroke-dasharray="6 5"/>';
+    s += '<circle cx="'+cx+'" cy="'+cy+'" r="50" fill="#0E1F1D" stroke="#5DCAA5" stroke-width="1.5"/>';
+    s += '<text class="mtxt" x="'+cx+'" y="'+(cy-3)+'" text-anchor="middle" font-size="17" font-weight="600" fill="#E6ECF2">ANYELO</text>';
+    s += '<text class="mmono" x="'+cx+'" y="'+(cy+14)+'" text-anchor="middle" font-size="8" letter-spacing="2" fill="#5DCAA5">CENTRO DE VIDA</text>';
+    s += '</g>';
+
+    // nodos categoría
+    cats.forEach((c,i)=>{
+      const x = cx + R1*Math.cos(rad(c.angle)), y = cy + R1*Math.sin(rad(c.angle));
+      const w=140, h=46, idx = H_(c.fn);
+      s += '<g class="mnode node-pop" style="animation-delay:'+(0.6+i*0.12)+'s" onclick="App.mapClick('+idx+')">';
+      s += '<rect x="'+(x-w/2)+'" y="'+(y-h/2)+'" width="'+w+'" height="'+h+'" rx="10" fill="'+c.bg+'" stroke="'+c.color+'" stroke-width="1.5"/>';
+      s += '<text class="mmono" x="'+x+'" y="'+(y+4)+'" text-anchor="middle" font-size="12" letter-spacing="2" fill="'+c.color+'">'+c.label+'</text>';
+      s += '</g>';
+    });
+
+    // nodos hoja
+    cats.forEach((c,ci)=>{
+      const k = c.leaves.length, step = 20;
+      c.leaves.forEach((lf,j)=>{
+        const la = c.angle + step*(j-(k-1)/2);
+        const lx = cx + R2*Math.cos(rad(la)), ly = cy + R2*Math.sin(rad(la));
+        const w=132, h=40, idx = H_(lf.fn);
+        s += '<g class="mnode node-pop" style="animation-delay:'+(1.35+ci*0.1+j*0.08)+'s" onclick="App.mapClick('+idx+')">';
+        s += '<rect x="'+(lx-w/2)+'" y="'+(ly-h/2)+'" width="'+w+'" height="'+h+'" rx="9" fill="#0B1017" stroke="'+c.color+'" stroke-width="1"/>';
+        s += '<text class="mtxt" x="'+lx+'" y="'+(ly-2)+'" text-anchor="middle" font-size="11.5" font-weight="500" fill="#E6ECF2">'+esc(lf.label)+'</text>';
+        if(lf.sub) s += '<text class="mmono" x="'+lx+'" y="'+(ly+12)+'" text-anchor="middle" font-size="8" fill="'+c.color+'">'+esc(lf.sub)+'</text>';
+        s += '</g>';
+      });
+    });
+
+    s += '</svg>';
+    cv.innerHTML = s;
+    const totalLeaves = cats.reduce((a,c)=>a+c.leaves.length,0);
+    document.getElementById('mapa-foot').textContent = cats.length+' ÁREAS · '+totalLeaves+' NODOS';
   },
 
   renderReloj() {
@@ -397,6 +540,7 @@ const App = {
   // ===== navegación =====
   abrirModulo(nombre) {
     document.getElementById('home').style.display = 'none';
+    document.getElementById('mapa').style.display = 'none';
     const pag = document.getElementById('pagina-'+nombre);
     if (pag) pag.style.display = 'block';
     if (nombre === 'organigrama') this.renderOrganigrama();
@@ -404,7 +548,7 @@ const App = {
   },
   volverHome() {
     document.querySelectorAll('[id^="pagina-"]').forEach(p => p.style.display='none');
-    document.getElementById('home').style.display = 'block';
+    if (this.vista === 'panel') this.verPanel(); else this.verMapa();
   },
 
   // ===== organigrama SVG =====
