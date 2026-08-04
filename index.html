@@ -131,6 +131,9 @@ button{font-family:inherit}
 #modal-backdrop{position:fixed;inset:0;background:rgba(4,7,10,0.78);z-index:50;display:none;align-items:flex-start;justify-content:center;overflow-y:auto;padding:40px 16px}
 #modal-backdrop.open{display:flex}
 .modal{background:#0E141C;border:1px solid var(--border-dim);border-radius:14px;width:100%;max-width:680px;padding:22px;animation:modalin 0.28s ease-out;position:relative}
+.modal-wide{max-width:920px}
+.vault-card{transition:transform .15s, filter .15s}
+.vault-card:hover{filter:brightness(1.25);transform:translateY(-2px)}
 .modal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
 .modal-head h2{font-size:18px;font-weight:500}
 .modal-head .mono{font-family:var(--font-mono);font-size:10px;letter-spacing:2px;color:var(--text-mute);display:block;margin-bottom:3px}
@@ -592,9 +595,9 @@ const App = {
   },
 
   // ===== modal genérico =====
-  abrirModal(html) {
+  abrirModal(html, wide) {
     const bd = document.getElementById('modal-backdrop');
-    bd.innerHTML = '<div class="modal">'+html+'</div>';
+    bd.innerHTML = '<div class="modal'+(wide?' modal-wide':'')+'">'+html+'</div>';
     bd.classList.add('open');
   },
   cerrarModal() {
@@ -706,15 +709,13 @@ const App = {
   // ===== Vault modal =====
   abrirModalVault() {
     const v = this.data.vault || [];
-    let cards = v.length ? '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px">' + v.map(d =>
-      '<div style="border:1px solid var(--border-dim);border-radius:10px;padding:12px;position:relative">' +
-      '<div style="font-family:var(--font-mono);font-size:9px;letter-spacing:1px;color:#AFA9EC">'+esc((d.tipo||'DOC').toUpperCase())+'</div>' +
+    let cards = v.length ? '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px">' + v.map(d =>
+      '<div class="vault-card" style="border:1px solid var(--border-dim);border-radius:10px;padding:12px;position:relative;cursor:pointer" onclick="App.verDoc('+d.id+')">' +
+      '<div style="font-family:var(--font-mono);font-size:9px;letter-spacing:1px;color:#AFA9EC">'+esc((d.tipo||'DOC').toUpperCase())+(d.texto?' · TXT':'')+'</div>' +
       '<div style="font-size:13px;margin:6px 0;word-break:break-word">'+esc(d.nombre)+'</div>' +
       '<div style="font-size:10px;color:var(--text-mute);font-family:var(--font-mono)">'+esc(d.fecha)+' · '+esc(d.tamano_kb)+' KB</div>' +
-      '<div class="btnrow" style="margin-top:10px">' +
-        '<a class="btn-mod" style="color:#AFA9EC;border-color:#3E3782" href="'+esc(d.drive_link)+'" target="_blank" rel="noopener">Abrir ↗</a>' +
-        '<button class="icon-btn danger" onclick="App.eliminarDoc('+d.id+')">✕</button>' +
-      '</div></div>').join('') + '</div>'
+      '<div style="font-family:var(--font-mono);font-size:10px;color:#AFA9EC;margin-top:8px">Abrir para leer →</div>' +
+      '</div>').join('') + '</div>'
       : '<div class="empty">Vault vacío — subí tu cédula, personería, contratos, CV…</div>';
     this.abrirModal(
       '<div class="modal-head"><div><span class="mono">◆ VAULT · DRIVE PRIVADO</span><h2>Documentos ('+v.length+')</h2></div><button class="modal-x" onclick="App.cerrarModal()">✕</button></div>' +
@@ -744,6 +745,27 @@ const App = {
     if (!confirm('¿Eliminar este documento? Se borra del Sheet y de Drive.')) return;
     try { await this.api({accion:'eliminar_documento',id}); await this.recargar(); this.abrirModalVault(); }
     catch(e){ alert('Error: '+e.message); }
+  },
+  verDoc(id) {
+    const d = (this.data.vault||[]).find(x => String(x.id)===String(id));
+    if (!d) return;
+    const preview = 'https://drive.google.com/file/d/'+encodeURIComponent(d.drive_id)+'/preview';
+    let html =
+      '<div class="modal-head"><div><span class="mono">◆ VAULT · '+esc((d.tipo||'DOC').toUpperCase())+'</span><h2>'+esc(d.nombre)+'</h2></div>' +
+      '<button class="modal-x" onclick="App.abrirModalVault()">✕</button></div>' +
+      '<iframe src="'+preview+'" style="width:100%;height:58vh;border:1px solid var(--border-dim);border-radius:10px;background:#fff"></iframe>';
+    if (d.texto && String(d.texto).trim()) {
+      html += '<label class="fld">TEXTO EXTRAÍDO (OCR)</label>' +
+        '<div style="max-height:220px;overflow:auto;white-space:pre-wrap;font-size:13px;line-height:1.5;background:#0B1017;border:1px solid var(--border-dim);border-radius:8px;padding:12px">'+esc(d.texto)+'</div>';
+    } else {
+      html += '<div style="font-family:var(--font-mono);font-size:11px;color:var(--text-mute);margin-top:12px">Sin texto extraído. Si querés que se lea el contenido, hay que habilitar el OCR en el backend (te digo cómo).</div>';
+    }
+    html += '<div class="btnrow" style="margin-top:16px">' +
+      '<a class="btn-mod" style="color:#AFA9EC;border-color:#3E3782" href="'+esc(d.drive_link)+'" target="_blank" rel="noopener">Abrir en Drive ↗</a>' +
+      '<button class="btn-mod" style="color:#7A9AB8;border-color:var(--border-dim)" onclick="App.abrirModalVault()">← Volver al Vault</button>' +
+      '<button class="btn-mod" style="color:#F09595;border-color:#5A2020" onclick="App.eliminarDoc('+d.id+')">Eliminar</button>' +
+      '</div>';
+    this.abrirModal(html, true);
   },
 
   // ===== Buscador Ctrl+K =====

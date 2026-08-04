@@ -15,7 +15,7 @@ const HOJAS = {
   Organigrama: ['id','tipo','nombre','padre_id','participacion','notas'],
   Estudios:    ['id','carrera','curso','avance','semestre','estado','notas'],
   Empleo:      ['id','empresa','puesto','fecha_aplicacion','estado','fuente','notas'],
-  Vault:       ['id','nombre','tipo','fecha','tags','drive_id','drive_link','tamano_kb'],
+  Vault:       ['id','nombre','tipo','fecha','tags','drive_id','drive_link','tamano_kb','texto'],
   Contactos:   ['id','nombre','organizacion','rol','email','telefono','notas'],
   Actividad:   ['timestamp','usuario','accion','hoja','detalle'],
   Config:      ['clave','valor']
@@ -29,6 +29,12 @@ function ensureSetup() {
       hoja = ss.insertSheet(nombre);
       hoja.appendRow(HOJAS[nombre]);
     }
+    // migración: asegurar que el encabezado incluya todas las columnas definidas
+    const ncols = Math.max(1, hoja.getLastColumn());
+    const headers = hoja.getRange(1, 1, 1, ncols).getValues()[0];
+    HOJAS[nombre].forEach((col, i) => {
+      if (headers[i] !== col) hoja.getRange(1, i + 1).setValue(col);
+    });
   });
   const cfg = ss.getSheetByName('Config');
   if (cfg.getLastRow() < 2) {
@@ -134,6 +140,25 @@ function subirDocumento(datos) {
   const carpeta = DriveApp.getFolderById(folderId);
   const blob = Utilities.newBlob(Utilities.base64Decode(datos.base64), datos.mime, datos.nombre);
   const archivo = carpeta.createFile(blob);
+
+  // Extracción de texto por OCR (requiere el servicio avanzado "Drive" habilitado).
+  // Si no está habilitado o falla, se guarda sin texto — la subida NO se rompe.
+  let texto = '';
+  try {
+    if (/pdf|image\//i.test(datos.mime || '')) {
+      const tmp = Drive.Files.insert(
+        { title: '_ocr_temp_' + datos.nombre, mimeType: 'application/vnd.google-apps.document' },
+        blob,
+        { ocr: true, ocrLanguage: 'es' }
+      );
+      const doc = DocumentApp.openById(tmp.id);
+      texto = doc.getBody().getText().slice(0, 45000);
+      Drive.Files.remove(tmp.id);
+    }
+  } catch (e) {
+    texto = '';
+  }
+
   const id = agregarFila('Vault', {
     nombre: datos.nombre,
     tipo: datos.tipo,
@@ -141,9 +166,10 @@ function subirDocumento(datos) {
     tags: datos.tags || '',
     drive_id: archivo.getId(),
     drive_link: archivo.getUrl(),
-    tamano_kb: Math.round(blob.getBytes().length/1024)
+    tamano_kb: Math.round(blob.getBytes().length/1024),
+    texto: texto
   });
-  return { id: id, drive_id: archivo.getId(), drive_link: archivo.getUrl() };
+  return { id: id, drive_id: archivo.getId(), drive_link: archivo.getUrl(), ocr: texto ? true : false };
 }
 
 function eliminarDocumento(id) {
