@@ -1,48 +1,73 @@
 // Cloudflare Pages Function: /api/proxy
 // Recibe peticiones del frontend (que ya pasó Cloudflare Access),
 // inyecta la clave secreta, y hace fetch al Google Apps Script backend.
-// Las variables WEB_APP_URL_VIDA y VIDA_KEY se configuran en el dashboard
+// Sigue redirects manualmente porque Apps Script redirige a
+// script.googleusercontent.com (otro dominio) y `redirect: 'follow'`
+// tiene issues con eso en Cloudflare Workers (tira error 1101).
+// Variables WEB_APP_URL_VIDA y VIDA_KEY se configuran en el dashboard
 // de Cloudflare Pages → Settings → Environment variables.
 
 export async function onRequest(context) {
   const { request, env } = context;
 
-  if (!env.WEB_APP_URL_VIDA || !env.VIDA_KEY) {
-    return new Response(JSON.stringify({ ok: false, error: 'env vars not configured' }), {
-      status: 500,
-      headers: { 'content-type': 'application/json' }
-    });
+  try {
+    if (!env.WEB_APP_URL_VIDA || !env.VIDA_KEY) {
+      return json({ ok: false, error: 'env vars not configured' }, 500);
+    }
+
+    if (request.method === 'GET') {
+      const url = new URL(request.url);
+      const params = new URLSearchParams(url.search);
+      params.set('key', env.VIDA_KEY);
+      const upstream = env.WEB_APP_URL_VIDA + '?' + params.toString();
+      const text = await fetchFollow(upstream, { method: 'GET' });
+      return new Response(text, {
+        headers: { 'content-type': 'application/json' }
+      });
+    }
+
+    if (request.method === 'POST') {
+      let body;
+      try {
+        body = await request.json();
+      } catch {
+        return json({ ok: false, error: 'invalid json in request body' }, 400);
+      }
+      body.key = env.VIDA_KEY;
+      const text = await fetchFollow(env.WEB_APP_URL_VIDA, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      return new Response(text, {
+        headers: { 'content-type': 'application/json' }
+      });
+    }
+
+    return json({ ok: false, error: 'method not allowed' }, 405);
+
+  } catch (err) {
+    return json({ ok: false, error: 'proxy exception: ' + (err && err.message || String(err)) }, 500);
   }
+}
 
-  const upstream = new URL(env.WEB_APP_URL_VIDA);
-
-  if (request.method === 'GET') {
-    const url = new URL(request.url);
-    url.searchParams.forEach((v, k) => upstream.searchParams.set(k, v));
-    upstream.searchParams.set('key', env.VIDA_KEY);
-    const r = await fetch(upstream.toString(), { redirect: 'follow' });
-    return new Response(await r.text(), {
-      status: r.status,
-      headers: { 'content-type': 'application/json' }
-    });
+// Sigue redirects manualmente hasta 5 saltos.
+// Apps Script devuelve 302 al primer hit, con Location apuntando a
+// script.googleusercontent.com/macros/echo?... — ahí sí llega el JSON.
+async function fetchFollow(url, init) {
+  let r = await fetch(url, Object.assign({}, init, { redirect: 'manual' }));
+  for (let i = 0; i < 5; i++) {
+    if (r.status !== 301 && r.status !== 302 && r.status !== 303 && r.status !== 307 && r.status !== 308) break;
+    const loc = r.headers.get('location');
+    if (!loc) break;
+    r = await fetch(loc, { method: 'GET', redirect: 'manual' });
   }
+  return await r.text();
+}
 
-  if (request.method === 'POST') {
-    let body;
-    try { body = await request.json(); }
-    catch { return new Response(JSON.stringify({ ok: false, error: 'invalid json' }), { status: 400 }); }
-    body.key = env.VIDA_KEY;
-    const r = await fetch(upstream.toString(), {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify(body),
-      redirect: 'follow'
-    });
-    return new Response(await r.text(), {
-      status: r.status,
-      headers: { 'content-type': 'application/json' }
-    });
-  }
-
-  return new Response('method not allowed', { status: 405 });
+function json(obj, status) {
+  return new Response(JSON.stringify(obj), {
+    status: status || 200,
+    headers: { 'content-type': 'application/json' }
+  });
 }
