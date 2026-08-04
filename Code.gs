@@ -141,22 +141,15 @@ function subirDocumento(datos) {
   const blob = Utilities.newBlob(Utilities.base64Decode(datos.base64), datos.mime, datos.nombre);
   const archivo = carpeta.createFile(blob);
 
-  // Extracción de texto por OCR (requiere el servicio avanzado "Drive" habilitado).
-  // Si no está habilitado o falla, se guarda sin texto — la subida NO se rompe.
-  let texto = '';
+  // Extracción de texto por OCR vía API REST de Drive (no requiere servicio avanzado).
+  // Si falla, se guarda sin texto — la subida NO se rompe. El error se reporta en ocr_error.
+  let texto = '', ocrErr = '';
   try {
     if (/pdf|image\//i.test(datos.mime || '')) {
-      const tmp = Drive.Files.insert(
-        { title: '_ocr_temp_' + datos.nombre, mimeType: 'application/vnd.google-apps.document' },
-        blob,
-        { ocr: true, ocrLanguage: 'es' }
-      );
-      const doc = DocumentApp.openById(tmp.id);
-      texto = doc.getBody().getText().slice(0, 45000);
-      Drive.Files.remove(tmp.id);
+      texto = extraerTextoOCR(blob, datos.nombre).slice(0, 45000);
     }
   } catch (e) {
-    texto = '';
+    ocrErr = String(e).slice(0, 300);
   }
 
   const id = agregarFila('Vault', {
@@ -169,7 +162,41 @@ function subirDocumento(datos) {
     tamano_kb: Math.round(blob.getBytes().length/1024),
     texto: texto
   });
-  return { id: id, drive_id: archivo.getId(), drive_link: archivo.getUrl(), ocr: texto ? true : false };
+  return { id: id, drive_id: archivo.getId(), drive_link: archivo.getUrl(), ocr: texto ? true : false, ocr_error: ocrErr };
+}
+
+// Convierte una imagen/PDF a Google Doc con OCR (español) vía API REST v3,
+// exporta el texto plano y borra el Doc temporal. Solo usa el scope de Drive.
+function extraerTextoOCR(blob, nombre) {
+  const token = ScriptApp.getOAuthToken();
+  const boundary = 'vidaOCR' + Date.now();
+  const metadata = { name: '_ocr_temp_' + nombre, mimeType: 'application/vnd.google-apps.document' };
+  const pre = '--' + boundary + '\r\n' +
+    'Content-Type: application/json; charset=UTF-8\r\n\r\n' +
+    JSON.stringify(metadata) + '\r\n' +
+    '--' + boundary + '\r\n' +
+    'Content-Type: ' + (blob.getContentType() || 'application/octet-stream') + '\r\n\r\n';
+  const post = '\r\n--' + boundary + '--';
+  let payload = Utilities.newBlob(pre).getBytes();
+  payload = payload.concat(blob.getBytes());
+  payload = payload.concat(Utilities.newBlob(post).getBytes());
+
+  const up = UrlFetchApp.fetch(
+    'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&ocrLanguage=es&fields=id',
+    { method: 'post', contentType: 'multipart/related; boundary=' + boundary,
+      payload: payload, headers: { Authorization: 'Bearer ' + token }, muteHttpExceptions: true });
+  const upObj = JSON.parse(up.getContentText());
+  if (!upObj.id) throw new Error('upload ' + up.getResponseCode() + ': ' + up.getContentText().slice(0,150));
+
+  const ex = UrlFetchApp.fetch(
+    'https://www.googleapis.com/drive/v3/files/' + upObj.id + '/export?mimeType=text/plain',
+    { headers: { Authorization: 'Bearer ' + token }, muteHttpExceptions: true });
+  const texto = ex.getResponseCode() === 200 ? ex.getContentText() : '';
+
+  UrlFetchApp.fetch('https://www.googleapis.com/drive/v3/files/' + upObj.id,
+    { method: 'delete', headers: { Authorization: 'Bearer ' + token }, muteHttpExceptions: true });
+
+  return texto;
 }
 
 function eliminarDocumento(id) {
