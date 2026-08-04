@@ -179,6 +179,10 @@ label.fld{display:block;font-family:var(--font-mono);font-size:10px;letter-spaci
 .tag-empleo{background:#231708;color:#EF9F27}
 .tag-contacto{background:#20120C;color:#F0997B}
 
+/* ===== ficha de empresa ===== */
+.ficha-card{background:#0E141C;border:1px solid var(--border-dim);border-radius:12px;padding:18px;margin-bottom:14px;animation:fi 0.5s ease-out both}
+.ficha-cat{font-family:var(--font-mono);font-size:11px;letter-spacing:2px;color:#5DCAA5;margin-bottom:12px}
+
 /* ===== nav toggle Mapa/Panel ===== */
 .nav-toggle{display:flex;gap:4px;background:#0E141C;border:1px solid var(--border-dim);border-radius:8px;padding:3px}
 .nav-btn{background:none;border:none;color:var(--text-mute);font-family:var(--font-mono);font-size:11px;letter-spacing:1px;padding:5px 12px;border-radius:6px;cursor:pointer}
@@ -250,6 +254,15 @@ label.fld{display:block;font-family:var(--font-mono);font-size:10px;letter-spaci
     </div>
     <div id="org-canvas"></div>
     <div class="footbar"><span id="org-foot">—</span><span>ACT · <span id="org-date"></span></span></div>
+  </div>
+
+  <div id="pagina-jorisu" style="display:none">
+    <div class="page-head">
+      <button class="btn-back" onclick="App.volverHome()">← Volver</button>
+      <div class="page-title"><span class="mono">◆ FICHA DE EMPRESA</span>JORISU S.R.L. · Costa Piña</div>
+    </div>
+    <div id="jorisu-detalle"></div>
+    <div class="footbar"><span>◆ DATOS PRIVADOS · CF-ACCESS</span><span id="jorisu-det-foot">—</span></div>
   </div>
 
   <div class="footbar">
@@ -448,8 +461,9 @@ const App = {
       '<div class="mod-sub">'+esc(n.rol)+' · '+esc(pct(n.participacion))+'</div>' +
       '<div id="jorisu-live" class="mod-sub" style="margin-top:14px;opacity:0.75">Leyendo Costa Piña en vivo…</div>' +
       '<div class="btnrow">' +
-        '<a class="btn-mod" href="'+esc(n.endpoint)+'" target="_blank" rel="noopener">Abrir Costa Piña ↗</a>' +
-        '<button class="btn-mod" onclick="App.abrirModulo(\'organigrama\')">Ver organigrama</button>' +
+        '<button class="btn-mod" onclick="App.abrirModulo(\'jorisu\')">Ver ficha ⊞</button>' +
+        '<button class="btn-mod" onclick="App.abrirModulo(\'organigrama\')">Organigrama</button>' +
+        '<a class="btn-mod" href="'+esc(n.endpoint)+'" target="_blank" rel="noopener">Costa Piña ↗</a>' +
       '</div>';
     try {
       const j = await this.api({accion:'leer_dashboard_externo', id:'costa_pina'});
@@ -555,6 +569,7 @@ const App = {
     const pag = document.getElementById('pagina-'+nombre);
     if (pag) pag.style.display = 'block';
     if (nombre === 'organigrama') this.renderOrganigrama();
+    if (nombre === 'jorisu') this.renderJorisuDetalle();
     window.scrollTo(0,0);
   },
   volverHome() {
@@ -600,6 +615,89 @@ const App = {
     cv.innerHTML = s;
     document.getElementById('org-foot').textContent = '◆ '+socios.length+' SOCIOS · '+proyectos.length+' PROYECTOS · '+invs.length+' INVERSIONISTA';
     document.getElementById('org-date').textContent = new Date().toLocaleDateString('es-CR');
+  },
+
+  // ===== FICHA DE EMPRESA (JORISU / Costa Piña) =====
+  renderJorisuDetalle() {
+    const cont = document.getElementById('jorisu-detalle');
+    const emp = this.data.empresa || [];
+    const contactos = this.data.contactos || [];
+    const docs = (this.data.vault || []).filter(d =>
+      /jorisu|costa|pi[nñ]a|personer|escritura|arrend|c[eé]dula jur/i.test((d.tags||'')+' '+(d.nombre||'')+' '+(d.tipo||'')));
+
+    // secciones de datos (hoja Empresa) agrupadas por categoría
+    const cats = ['Identidad legal', 'Facturación'];
+    let html = '';
+    let delay = 0;
+    cats.forEach(cat => {
+      const filas = emp.filter(e => e.categoria === cat);
+      html += this.bloqueFicha(cat, filas, delay); delay += 0.08;
+    });
+
+    // contactos clave
+    html += '<div class="ficha-card" style="animation-delay:'+delay+'s"><div class="ficha-cat">◆ CONTACTOS CLAVE</div>';
+    if (contactos.length) {
+      html += '<table class="data"><tbody>' + contactos.map(c =>
+        '<tr><td style="width:38%"><b>'+esc(c.nombre)+'</b><div style="font-size:11px;color:var(--text-mute)">'+esc(c.rol||'')+'</div></td>' +
+        '<td>'+(c.email?esc(c.email)+'<br>':'')+(c.telefono?esc(c.telefono):'')+'<div style="font-size:11px;color:var(--text-mute)">'+esc(c.organizacion||'')+'</div></td></tr>').join('') + '</tbody></table>';
+    } else html += '<div class="empty">Sin contactos</div>';
+    html += '<div style="font-size:11px;color:var(--text-mute);font-family:var(--font-mono);margin-top:8px">Editá contactos desde el buscador (Ctrl+K) o el Sheet</div></div>';
+    delay += 0.08;
+
+    // documentos
+    html += '<div class="ficha-card" style="animation-delay:'+delay+'s"><div class="ficha-cat">◆ DOCUMENTOS</div>';
+    if (docs.length) {
+      html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px">' + docs.map(d =>
+        '<div class="vault-card" style="border:1px solid var(--border-dim);border-radius:10px;padding:12px;cursor:pointer" onclick="App.verDoc('+d.id+')">' +
+        '<div style="font-family:var(--font-mono);font-size:9px;color:#5DCAA5">'+esc((d.tipo||'DOC').toUpperCase())+(d.texto?' · TXT':'')+'</div>' +
+        '<div style="font-size:13px;margin:6px 0;word-break:break-word">'+esc(d.nombre)+'</div>' +
+        '<div style="font-family:var(--font-mono);font-size:10px;color:#5DCAA5">Abrir →</div></div>').join('') + '</div>';
+    } else html += '<div class="empty">Sin documentos de JORISU aún — subilos al Vault con la etiqueta "JORISU"</div>';
+    html += '<button class="btn-add" onclick="App.verPanel();setTimeout(()=>App.abrirModalVault(),150)">+ Ir al Vault a subir documentos</button></div>';
+
+    cont.innerHTML = html;
+    document.getElementById('jorisu-det-foot').textContent = emp.length + ' CAMPOS · ' + docs.length + ' DOCS';
+  },
+  bloqueFicha(cat, filas, delay) {
+    let rows = filas.length ? filas.map(f =>
+      '<tr><td style="width:42%;color:var(--text-dim)">'+esc(f.campo)+'</td>' +
+      '<td><b>'+esc(f.valor||'—')+'</b></td>' +
+      '<td class="row-actions">' +
+        '<button class="icon-btn" onclick=\'App.formCampo('+JSON.stringify(f).replace(/'/g,"&#39;")+')\'>✎</button>' +
+        '<button class="icon-btn danger" onclick="App.eliminarCampo('+f.id+')">✕</button>' +
+      '</td></tr>').join('') : '<tr><td colspan="3" class="empty">Sin datos — agregá el primero</td></tr>';
+    return '<div class="ficha-card" style="animation-delay:'+delay+'s">' +
+      '<div class="ficha-cat">◆ '+esc(cat.toUpperCase())+'</div>' +
+      '<table class="data"><tbody>'+rows+'</tbody></table>' +
+      '<button class="btn-add" onclick="App.formCampo(null,\''+esc(cat)+'\')">+ Agregar campo</button></div>';
+  },
+  formCampo(f, categoria) {
+    f = f || {};
+    const cat = f.categoria || categoria || 'Identidad legal';
+    this.abrirModal(
+      '<div class="modal-head"><div><span class="mono">◆ '+esc(cat.toUpperCase())+'</span><h2>'+(f.id?'Editar':'Nuevo')+' campo</h2></div><button class="modal-x" onclick="App.cerrarModal()">✕</button></div>' +
+      '<label class="fld">CATEGORÍA</label><select id="f-cat"><option'+(cat==='Identidad legal'?' selected':'')+'>Identidad legal</option><option'+(cat==='Facturación'?' selected':'')+'>Facturación</option></select>' +
+      '<label class="fld">CAMPO</label><input id="f-campo" value="'+esc(f.campo||'')+'" placeholder="Ej: Cédula jurídica, Correo de facturación…">' +
+      '<label class="fld">VALOR</label><input id="f-valor" value="'+esc(f.valor||'')+'" placeholder="Ej: 3-102-780078">' +
+      '<div><button class="btn-primary" onclick="App.guardarCampo('+(f.id||'null')+')">Guardar</button> <button class="btn-ghost" onclick="App.cerrarModal()">Cancelar</button></div>'
+    );
+  },
+  async guardarCampo(id) {
+    const datos = {
+      categoria: document.getElementById('f-cat').value,
+      campo: document.getElementById('f-campo').value,
+      valor: document.getElementById('f-valor').value
+    };
+    if (!datos.campo) { alert('Poné un nombre de campo'); return; }
+    try {
+      await this.api(id ? {accion:'editar_fila',hoja:'Empresa',id,datos} : {accion:'agregar_fila',hoja:'Empresa',datos});
+      await this.recargar(); this.cerrarModal(); this.renderJorisuDetalle();
+    } catch(e){ alert('Error: '+e.message); }
+  },
+  async eliminarCampo(id) {
+    if (!confirm('¿Eliminar este campo?')) return;
+    try { await this.api({accion:'eliminar_fila',hoja:'Empresa',id}); await this.recargar(); this.renderJorisuDetalle(); }
+    catch(e){ alert('Error: '+e.message); }
   },
 
   // ===== modal genérico =====
@@ -785,6 +883,7 @@ const App = {
     (this.data.empleo||[]).forEach(e => idx.push({tipo:'empleo', titulo:e.empresa, sub:(e.puesto||'')+' · '+(e.estado||''), fn:()=>{this.cerrarBuscador();this.abrirModalEmpleo();}}));
     (this.data.vault||[]).forEach(v => idx.push({tipo:'documento', titulo:v.nombre, sub:(v.tipo||'')+' · '+(v.fecha||''), fn:()=>window.open(v.drive_link,'_blank')}));
     (this.data.contactos||[]).forEach(c => idx.push({tipo:'contacto', titulo:c.nombre, sub:(c.rol||'')+(c.organizacion?' · '+c.organizacion:''), fn:()=>alert(c.nombre+'\n'+(c.rol||'')+'\n'+(c.email||'')+'\n'+(c.telefono||''))}));
+    (this.data.empresa||[]).forEach(e => idx.push({tipo:'negocio', titulo:e.campo+': '+e.valor, sub:'JORISU · '+e.categoria, fn:()=>this.abrirModulo('jorisu')}));
     return idx;
   },
   abrirBuscador() {

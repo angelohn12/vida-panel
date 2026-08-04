@@ -17,6 +17,7 @@ const HOJAS = {
   Empleo:      ['id','empresa','puesto','fecha_aplicacion','estado','fuente','notas'],
   Vault:       ['id','nombre','tipo','fecha','tags','drive_id','drive_link','tamano_kb','texto'],
   Contactos:   ['id','nombre','organizacion','rol','email','telefono','notas'],
+  Empresa:     ['id','categoria','campo','valor'],
   Actividad:   ['timestamp','usuario','accion','hoja','detalle'],
   Config:      ['clave','valor']
 };
