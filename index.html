@@ -24,7 +24,7 @@
   --accent-cyan: #4FD1FF;
 }
 *{box-sizing:border-box;margin:0;padding:0}
-html,body{background:var(--bg);color:var(--text);font-family:var(--font-sans);min-height:100vh;-webkit-font-smoothing:antialiased}
+html,body{background:var(--bg);color:var(--text);font-family:var(--font-sans);min-height:100vh;-webkit-font-smoothing:antialiased;overflow-x:hidden}
 body{
   padding:env(safe-area-inset-top,0) env(safe-area-inset-right,0) env(safe-area-inset-bottom,0) env(safe-area-inset-left,0);
   background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
@@ -57,7 +57,7 @@ button{font-family:inherit}
 
 /* ===== grid bento ===== */
 .grid{display:grid;grid-template-columns:2.2fr 1fr 1fr;grid-auto-rows:minmax(80px,auto);gap:10px}
-.mod{border-radius:12px;padding:14px 16px;position:relative;animation:fi 0.5s ease-out both;overflow:hidden}
+.mod{border-radius:12px;padding:14px 16px;position:relative;animation:fi 0.5s ease-out both;overflow:hidden;min-width:0}
 .mod::after{content:"";position:absolute;top:8px;right:8px;width:7px;height:7px}
 .mod::before{content:"";position:absolute;bottom:8px;left:8px;width:7px;height:7px}
 .mod:nth-child(1){animation-delay:0.05s}
@@ -197,9 +197,10 @@ label.fld{display:block;font-family:var(--font-mono);font-size:10px;letter-spaci
 #mapa-canvas .ring{animation:rot 22s linear infinite;transform-box:fill-box;transform-origin:center}
 .node-pop{animation:pop 0.55s ease-out both}
 
-@media (max-width:640px){
-  .grid{grid-template-columns:1fr}
-  .mod-hero{grid-column:auto;grid-row:auto}
+@media (max-width:760px){
+  .grid{grid-template-columns:1fr !important}
+  .mod-hero{grid-column:auto !important;grid-row:auto !important}
+  .mod[data-modulo="actividad"]{grid-column:auto !important}
   .topbar{font-size:10px}
   .btn-search .kbd{display:none}
   .nav-btn{padding:5px 9px}
@@ -263,6 +264,13 @@ label.fld{display:block;font-family:var(--font-mono);font-size:10px;letter-spaci
 
 <script>
 const esc = s => String(s==null?'':s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+// Google Sheets convierte "50%" en 0.5; esto lo vuelve a mostrar como "50%".
+const pct = v => {
+  if (v === '' || v == null) return '';
+  const n = Number(v);
+  if (!isNaN(n) && n > 0 && n <= 1) { const p = n * 100; return (Math.round(p * 10) / 10) + '%'; }
+  return String(v);
+};
 
 const App = {
   data: null,
@@ -347,7 +355,7 @@ const App = {
 
     const cats = [
       { label:'NEGOCIOS', color:'#5DCAA5', bg:'#0E1F1D', angle:315,
-        leaves: negocios.map(n=>({label:short(n.nombre), sub:n.participacion, fn:()=> n.nombre.includes('JORISU')? this.abrirModulo('organigrama') : window.open(n.endpoint,'_blank') })),
+        leaves: negocios.map(n=>({label:short(n.nombre), sub:pct(n.participacion), fn:()=> n.nombre.includes('JORISU')? this.abrirModulo('organigrama') : window.open(n.endpoint,'_blank') })),
         fn:()=>this.verPanel() },
       { label:'EDUCACIÓN', color:'#85B7EB', bg:'#0A1930', angle:225,
         leaves: carreras.map(c=>({label:short(c), sub:'ULACIT', fn:()=>this.abrirModalUlacit()})),
@@ -437,7 +445,7 @@ const App = {
       '<div class="rings"><svg viewBox="0 0 42 42"><circle cx="21" cy="21" r="19" fill="none" stroke="#1D9E75" stroke-width="0.5"/><circle cx="21" cy="21" r="13" fill="none" stroke="#5DCAA5" stroke-width="0.5" stroke-dasharray="4 3"/><circle cx="21" cy="21" r="7" fill="none" stroke="#9FE1CB" stroke-width="0.5"/></svg></div>' +
       '<div class="mod-lbl">MÓDULO PRIMARIO</div>' +
       '<div class="mod-title">'+esc(n.nombre)+'</div>' +
-      '<div class="mod-sub">'+esc(n.rol)+' · '+esc(n.participacion)+'</div>' +
+      '<div class="mod-sub">'+esc(n.rol)+' · '+esc(pct(n.participacion))+'</div>' +
       '<div id="jorisu-live" class="mod-sub" style="margin-top:14px;opacity:0.75">Leyendo Costa Piña en vivo…</div>' +
       '<div class="btnrow">' +
         '<a class="btn-mod" href="'+esc(n.endpoint)+'" target="_blank" rel="noopener">Abrir Costa Piña ↗</a>' +
@@ -464,7 +472,7 @@ const App = {
     el.innerHTML =
       '<div class="mod-lbl">AVELLANA</div>' +
       '<div class="mod-title">Studio</div>' +
-      '<div class="mod-sub">'+esc(n.participacion)+' · en vivo</div>' +
+      '<div class="mod-sub">'+esc(pct(n.participacion))+' · en vivo</div>' +
       '<div id="avellana-live" class="mod-sub" style="margin-top:8px;font-size:11px;opacity:0.75">cargando…</div>' +
       '<div class="btnrow"><a class="btn-mod" href="'+esc(n.endpoint)+'" target="_blank" rel="noopener">Abrir ↗</a></div>';
     try {
@@ -570,7 +578,7 @@ const App = {
       '<g class="node" style="animation-delay:'+delay+'s">' +
       '<rect x="'+(x-w/2)+'" y="'+y+'" width="'+w+'" height="'+h+'" rx="8" fill="'+fill+'" stroke="'+stroke+'" stroke-width="1"/>' +
       '<text x="'+x+'" y="'+(y+20)+'" text-anchor="middle" font-size="12" font-weight="500" fill="#E6ECF2">'+esc(n.nombre)+'</text>' +
-      (n.participacion? '<text x="'+x+'" y="'+(y+36)+'" text-anchor="middle" class="mono" font-size="9" fill="'+stroke+'">'+esc(n.participacion)+'</text>':'') +
+      (n.participacion? '<text x="'+x+'" y="'+(y+36)+'" text-anchor="middle" class="mono" font-size="9" fill="'+stroke+'">'+esc(pct(n.participacion))+'</text>':'') +
       (n.notas? '<text x="'+x+'" y="'+(y+(n.participacion?50:36))+'" text-anchor="middle" class="mono" font-size="8" fill="#5A7A9A">'+esc(n.notas)+'</text>':'') +
       '</g>';
     const linea = (x1,y1,x2,y2,delay,k) => '<path class="ln'+(k?' ln-k':'')+'" style="animation-delay:'+delay+'s" d="M '+x1+' '+y1+' L '+x2+' '+y2+'"/>';
