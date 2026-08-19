@@ -391,7 +391,7 @@ const App = {
 
     const cats = [
       { label:'NEGOCIOS', color:'#5DCAA5', bg:'#0E1F1D', angle:315,
-        leaves: negocios.map(n=>({label:short(n.nombre), sub:pct(n.participacion), fn:()=> n.nombre.includes('JORISU')? this.abrirModulo('organigrama') : window.open(n.endpoint,'_blank') })),
+        leaves: negocios.map(n=>({label: n.nombre.includes('JORISU') ? 'Costa Piña' : short(n.nombre), sub:pct(n.participacion), fn:()=> window.open(n.endpoint,'_blank') })),
         fn:()=>this.verPanel() },
       { label:'EDUCACIÓN', color:'#85B7EB', bg:'#0A1930', angle:225,
         leaves: carreras.map(c=>({label:short(c), sub:'ULACIT', fn:()=>this.abrirModalUlacit()})),
