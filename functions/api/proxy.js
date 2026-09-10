@@ -22,7 +22,7 @@ export async function onRequest(context) {
       const upstream = env.WEB_APP_URL_VIDA + '?' + params.toString();
       const text = await fetchFollow(upstream, { method: 'GET' });
       return new Response(text, {
-        headers: { 'content-type': 'application/json' }
+        headers: { 'content-type': 'application/json', 'cache-control': 'no-store' }
       });
     }
 
@@ -40,7 +40,7 @@ export async function onRequest(context) {
         body: JSON.stringify(body),
       });
       return new Response(text, {
-        headers: { 'content-type': 'application/json' }
+        headers: { 'content-type': 'application/json', 'cache-control': 'no-store' }
       });
     }
 
@@ -68,6 +68,6 @@ async function fetchFollow(url, init) {
 function json(obj, status) {
   return new Response(JSON.stringify(obj), {
     status: status || 200,
-    headers: { 'content-type': 'application/json' }
+    headers: { 'content-type': 'application/json', 'cache-control': 'no-store' }
   });
 }

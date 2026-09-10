@@ -11,10 +11,12 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Vida">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 :root{
-  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, system-ui, sans-serif;
-  --font-mono: "SF Mono", ui-monospace, "Cascadia Code", Menlo, Consolas, monospace;
+  --font-sans: "Space Grotesk", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", "SF Mono", ui-monospace, "Cascadia Code", Menlo, Consolas, monospace;
   --bg: #0B0F14;
   --grid: #1A2230;
   --text: #E6ECF2;
@@ -31,6 +33,7 @@ body{
   background-size:24px 24px;background-attachment:fixed;background-position:center;
 }
 body::before{content:"";position:fixed;inset:0;background:radial-gradient(circle at 50% 0%, rgba(79,209,255,0.04), transparent 60%);pointer-events:none;z-index:0}
+body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:2;opacity:0.035;mix-blend-mode:overlay;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='90' height='90'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
 main{max-width:1080px;margin:0 auto;padding:16px;position:relative;z-index:1}
 a{color:inherit;text-decoration:none}
 button{font-family:inherit}
@@ -57,18 +60,19 @@ button{font-family:inherit}
 
 /* ===== grid bento ===== */
 .grid{display:grid;grid-template-columns:2.2fr 1fr 1fr;grid-auto-rows:minmax(80px,auto);gap:10px}
-.mod{border-radius:12px;padding:14px 16px;position:relative;animation:fi 0.5s ease-out both;overflow:hidden;min-width:0}
+.mod{border-radius:12px;padding:14px 16px;position:relative;animation:fi 0.6s cubic-bezier(.22,1,.36,1) both;overflow:hidden;min-width:0;transition:box-shadow .3s ease, transform .3s cubic-bezier(.22,1,.36,1)}
 .mod::after{content:"";position:absolute;top:8px;right:8px;width:7px;height:7px}
 .mod::before{content:"";position:absolute;bottom:8px;left:8px;width:7px;height:7px}
+.mod.mod-clickable{background-image:radial-gradient(240px circle at var(--mx,50%) var(--my,50%), var(--spot-color,transparent), transparent 68%);background-blend-mode:screen;background-repeat:no-repeat}
 .mod:nth-child(1){animation-delay:0.05s}
 .mod:nth-child(2){animation-delay:0.15s}
 .mod:nth-child(3){animation-delay:0.25s}
 .mod:nth-child(4){animation-delay:0.35s}
 .mod:nth-child(5){animation-delay:0.45s}
 .mod:nth-child(6){animation-delay:0.55s}
-.mod-clickable{cursor:pointer;transition:transform 0.15s, filter 0.15s}
-.mod-clickable:hover{filter:brightness(1.15)}
-.mod-clickable:active{transform:scale(0.99)}
+.mod-clickable{cursor:pointer}
+.mod-clickable:hover{filter:brightness(1.12);transform:translateY(-3px);box-shadow:0 14px 32px -12px var(--shadow-color,rgba(0,0,0,.5))}
+.mod-clickable:active{transform:translateY(-1px) scale(0.99);transition:transform .1s ease}
 .mod-hero{grid-column:1/2;grid-row:1/3;padding:18px}
 .mod-lbl{font-family:var(--font-mono);font-size:10px;letter-spacing:2px;margin-bottom:6px}
 .mod-title{font-size:17px;font-weight:500;color:var(--text);margin-bottom:2px}
@@ -86,27 +90,27 @@ button{font-family:inherit}
 .rings svg{width:100%;height:100%;animation:rot 14s linear infinite}
 
 /* ===== color por módulo ===== */
-.c-teal{background:#0E1F1D;border:1px solid #1D4D42}
+.c-teal{background:#0E1F1D;border:1px solid #1D4D42;--shadow-color:rgba(29,158,117,.35);--spot-color:rgba(93,202,165,.16)}
 .c-teal .mod-lbl{color:#5DCAA5}.c-teal::after{border-top:1px solid #5DCAA5;border-right:1px solid #5DCAA5}.c-teal::before{border-bottom:1px solid #5DCAA5;border-left:1px solid #5DCAA5}
 .c-teal .mod-sub{color:#5DCAA5}.c-teal .big-num{color:#9FE1CB}.c-teal .chart-bars span{background:#1D9E75}.c-teal .pb{background:#1D4D42}.c-teal .pb>i{background:#5DCAA5}.c-teal .ticks{color:#5DCAA5}.c-teal .btn-mod{color:#5DCAA5;border-color:#1D4D42}.c-teal .btn-mod:hover{background:#0A1512}
 
-.c-pink{background:#1F1017;border:1px solid #5A2340}
+.c-pink{background:#1F1017;border:1px solid #5A2340;--shadow-color:rgba(237,147,177,.3);--spot-color:rgba(237,147,177,.16)}
 .c-pink .mod-lbl{color:#ED93B1}.c-pink::after{border-top:1px solid #ED93B1;border-right:1px solid #ED93B1}.c-pink::before{border-bottom:1px solid #ED93B1;border-left:1px solid #ED93B1}
 .c-pink .mod-sub{color:#ED93B1}.c-pink .btn-mod{color:#ED93B1;border-color:#5A2340}
 
-.c-blue{background:#0A1930;border:1px solid #1B4478}
+.c-blue{background:#0A1930;border:1px solid #1B4478;--shadow-color:rgba(133,183,235,.3);--spot-color:rgba(133,183,235,.16)}
 .c-blue .mod-lbl{color:#85B7EB}.c-blue::after{border-top:1px solid #85B7EB;border-right:1px solid #85B7EB}.c-blue::before{border-bottom:1px solid #85B7EB;border-left:1px solid #85B7EB}
 .c-blue .mod-sub{color:#85B7EB}.c-blue .btn-mod{color:#85B7EB;border-color:#1B4478}
 
-.c-amber{background:#231708;border:1px solid #7A4B0E}
+.c-amber{background:#231708;border:1px solid #7A4B0E;--shadow-color:rgba(239,159,39,.3);--spot-color:rgba(239,159,39,.16)}
 .c-amber .mod-lbl{color:#EF9F27}.c-amber::after{border-top:1px solid #EF9F27;border-right:1px solid #EF9F27}.c-amber::before{border-bottom:1px solid #EF9F27;border-left:1px solid #EF9F27}
 .c-amber .mod-sub{color:#EF9F27}.c-amber .btn-mod{color:#EF9F27;border-color:#7A4B0E}
 
-.c-purple{background:#181530;border:1px solid #3E3782}
+.c-purple{background:#181530;border:1px solid #3E3782;--shadow-color:rgba(175,169,236,.3);--spot-color:rgba(175,169,236,.16)}
 .c-purple .mod-lbl{color:#AFA9EC}.c-purple::after{border-top:1px solid #AFA9EC;border-right:1px solid #AFA9EC}.c-purple::before{border-bottom:1px solid #AFA9EC;border-left:1px solid #AFA9EC}
 .c-purple .mod-sub{color:#AFA9EC}.c-purple .btn-mod{color:#AFA9EC;border-color:#3E3782}
 
-.c-coral{background:#20120C;border:1px solid #6E2E15}
+.c-coral{background:#20120C;border:1px solid #6E2E15;--shadow-color:rgba(240,153,123,.3);--spot-color:rgba(240,153,123,.16)}
 .c-coral .mod-lbl{color:#F0997B}.c-coral::after{border-top:1px solid #F0997B;border-right:1px solid #F0997B}.c-coral::before{border-bottom:1px solid #F0997B;border-left:1px solid #F0997B}
 .c-coral .mod-sub{color:#F0997B}.c-coral .chart-bars span{background:#D85A30}.c-coral .btn-mod{color:#F0997B;border-color:#6E2E15}
 
@@ -158,6 +162,14 @@ label.fld{display:block;font-family:var(--font-mono);font-size:10px;letter-spaci
 .btn-add{background:none;border:1px dashed var(--border-dim);color:var(--text-dim);font-family:var(--font-mono);font-size:11px;letter-spacing:1px;padding:8px 14px;border-radius:7px;cursor:pointer;width:100%;margin-top:12px}
 .btn-add:hover{border-color:var(--text-dim);color:var(--text)}
 .empty{text-align:center;color:var(--text-mute);font-family:var(--font-mono);font-size:12px;padding:24px 0}
+
+/* ===== toasts (reemplazan alert()) ===== */
+#toast-stack{position:fixed;top:16px;right:16px;z-index:80;display:flex;flex-direction:column;gap:8px;max-width:320px}
+.toast{background:#0E141C;border:1px solid var(--border-dim);border-left:3px solid var(--accent-cyan);border-radius:8px;padding:11px 14px;font-size:13px;color:var(--text);box-shadow:0 10px 28px -10px rgba(0,0,0,.6);animation:toastin .3s cubic-bezier(.22,1,.36,1) both}
+.toast.err{border-left-color:#F09595}
+@keyframes toastin{from{opacity:0;transform:translateX(24px)}to{opacity:1;transform:translateX(0)}}
+.toast.out{animation:toastout .25s ease forwards}
+@keyframes toastout{to{opacity:0;transform:translateX(24px)}}
 
 /* ===== buscador Ctrl+K ===== */
 #palette-backdrop{position:fixed;inset:0;background:rgba(4,7,10,0.7);z-index:60;display:none;justify-content:center;padding-top:12vh}
@@ -295,6 +307,7 @@ label.fld{display:block;font-family:var(--font-mono);font-size:10px;letter-spaci
   </div>
 </main>
 
+<div id="toast-stack"></div>
 <div id="modal-backdrop" onclick="if(event.target===this)App.cerrarModal()"></div>
 <div id="palette-backdrop" onclick="if(event.target===this)App.cerrarBuscador()"></div>
 
@@ -321,7 +334,7 @@ const App = {
       el.innerHTML = '<div class="mod-lbl">' + esc((el.dataset.modulo||'').toUpperCase()) + '</div><div class="mod-title" style="opacity:0.4">cargando…</div>';
     });
     try {
-      const r = await fetch('/api/proxy?accion=leer');
+      const r = await fetch('/api/proxy?accion=leer', {cache: 'no-store'});
       const j = await r.json();
       if (!j.ok) return this.mostrarError(j.error || 'error de carga');
       this.data = j;
@@ -725,16 +738,16 @@ const App = {
       campo: document.getElementById('f-campo').value,
       valor: document.getElementById('f-valor').value
     };
-    if (!datos.campo) { alert('Poné un nombre de campo'); return; }
+    if (!datos.campo) { App.toast('Poné un nombre de campo', 'err'); return; }
     try {
       await this.api(id ? {accion:'editar_fila',hoja:'Empresa',id,datos} : {accion:'agregar_fila',hoja:'Empresa',datos});
       await this.recargar(); this.cerrarModal(); this.renderJorisuDetalle();
-    } catch(e){ alert('Error: '+e.message); }
+    } catch(e){ App.toast('Error: '+e.message, 'err'); }
   },
   async eliminarCampo(id) {
     if (!confirm('¿Eliminar este campo?')) return;
     try { await this.api({accion:'eliminar_fila',hoja:'Empresa',id}); await this.recargar(); this.renderJorisuDetalle(); }
-    catch(e){ alert('Error: '+e.message); }
+    catch(e){ App.toast('Error: '+e.message, 'err'); }
   },
 
   // ===== BITÁCORA / CONTEXTO =====
@@ -788,7 +801,7 @@ const App = {
   },
   async guardarNota() {
     const texto = document.getElementById('b-texto').value.trim();
-    if (!texto) { alert('Escribí algo primero'); return; }
+    if (!texto) { App.toast('Escribí algo primero', 'err'); return; }
     const datos = {
       fecha: new Date().toISOString().slice(0,10),
       etiqueta: document.getElementById('b-etiqueta').value.trim(),
@@ -799,12 +812,12 @@ const App = {
     try {
       await this.api({accion:'agregar_fila', hoja:'Bitacora', datos});
       await this.recargar(); this.renderBitacora();
-    } catch(e){ alert('Error: '+e.message); }
+    } catch(e){ App.toast('Error: '+e.message, 'err'); }
   },
   async eliminarNota(id) {
     if (!confirm('¿Eliminar esta nota?')) return;
     try { await this.api({accion:'eliminar_fila', hoja:'Bitacora', id}); await this.recargar(); this.renderBitacora(); }
-    catch(e){ alert('Error: '+e.message); }
+    catch(e){ App.toast('Error: '+e.message, 'err'); }
   },
 
   // ===== modal genérico =====
@@ -861,12 +874,12 @@ const App = {
     try {
       await this.api(id ? {accion:'editar_fila',hoja:'Estudios',id,datos} : {accion:'agregar_fila',hoja:'Estudios',datos});
       await this.recargar(); this.abrirModalUlacit();
-    } catch(e){ alert('Error: '+e.message); }
+    } catch(e){ App.toast('Error: '+e.message, 'err'); }
   },
   async eliminarCurso(id) {
     if (!confirm('¿Eliminar este curso?')) return;
     try { await this.api({accion:'eliminar_fila',hoja:'Estudios',id}); await this.recargar(); this.abrirModalUlacit(); }
-    catch(e){ alert('Error: '+e.message); }
+    catch(e){ App.toast('Error: '+e.message, 'err'); }
   },
 
   // ===== Empleo modal =====
@@ -911,12 +924,12 @@ const App = {
     try {
       await this.api(id ? {accion:'editar_fila',hoja:'Empleo',id,datos} : {accion:'agregar_fila',hoja:'Empleo',datos});
       await this.recargar(); this.abrirModalEmpleo();
-    } catch(e){ alert('Error: '+e.message); }
+    } catch(e){ App.toast('Error: '+e.message, 'err'); }
   },
   async eliminarEmpleo(id) {
     if (!confirm('¿Eliminar esta aplicación?')) return;
     try { await this.api({accion:'eliminar_fila',hoja:'Empleo',id}); await this.recargar(); this.abrirModalEmpleo(); }
-    catch(e){ alert('Error: '+e.message); }
+    catch(e){ App.toast('Error: '+e.message, 'err'); }
   },
 
   // ===== Vault modal =====
@@ -943,7 +956,7 @@ const App = {
   },
   async subirDoc() {
     const inp = document.getElementById('f-file');
-    if (!inp.files || !inp.files[0]) { alert('Elegí un archivo primero'); return; }
+    if (!inp.files || !inp.files[0]) { App.toast('Elegí un archivo primero', 'err'); return; }
     const file = inp.files[0];
     const st = document.getElementById('up-status');
     st.textContent = 'Leyendo archivo…';
@@ -957,7 +970,7 @@ const App = {
   async eliminarDoc(id) {
     if (!confirm('¿Eliminar este documento? Se borra del Sheet y de Drive.')) return;
     try { await this.api({accion:'eliminar_documento',id}); await this.recargar(); this.abrirModalVault(); }
-    catch(e){ alert('Error: '+e.message); }
+    catch(e){ App.toast('Error: '+e.message, 'err'); }
   },
   verDoc(id) {
     const d = (this.data.vault||[]).find(x => String(x.id)===String(id));
@@ -1045,6 +1058,18 @@ const App = {
   },
 
   recargar() { return this.cargar(); },
+  toast(msg, tipo) {
+    const stack = document.getElementById('toast-stack');
+    if (!stack) return;
+    const el = document.createElement('div');
+    el.className = 'toast' + (tipo === 'err' ? ' err' : '');
+    el.textContent = msg;
+    stack.appendChild(el);
+    setTimeout(() => {
+      el.classList.add('out');
+      setTimeout(() => el.remove(), 260);
+    }, 3800);
+  },
   mostrarError(msg) {
     document.getElementById('foot-status').textContent = 'ERROR';
     document.querySelectorAll('.mod').forEach(el => {
@@ -1056,6 +1081,16 @@ const App = {
 document.addEventListener('keydown', e => {
   if ((e.ctrlKey || e.metaKey) && e.key === 'k') { e.preventDefault(); App.abrirBuscador(); }
 });
+
+// Brillo tipo HUD que sigue al cursor dentro de cada módulo clickeable
+document.addEventListener('pointermove', e => {
+  const mod = e.target.closest && e.target.closest('.mod-clickable');
+  if (!mod) return;
+  const r = mod.getBoundingClientRect();
+  mod.style.setProperty('--mx', ((e.clientX - r.left) / r.width * 100) + '%');
+  mod.style.setProperty('--my', ((e.clientY - r.top) / r.height * 100) + '%');
+});
+
 window.addEventListener('DOMContentLoaded', () => App.cargar());
 </script>
 </body>
