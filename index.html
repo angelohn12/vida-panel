@@ -218,8 +218,9 @@ label.fld{display:block;font-family:var(--font-mono);font-size:10px;letter-spaci
 #mapa-canvas{width:100%;overflow:hidden}
 #mapa-canvas svg{width:100%;height:auto;display:block}
 #mapa-canvas .mnode{cursor:pointer;transition:transform .18s ease;transform-box:fill-box;transform-origin:center}
+#mapa-canvas .mnode{transition:filter .25s ease}
 #mapa-canvas .mnode:hover{transform:scale(1.07)}
-#mapa-canvas .mnode:hover rect,#mapa-canvas .mnode:hover circle{filter:brightness(1.35)}
+#mapa-canvas .mnode:hover rect,#mapa-canvas .mnode:hover circle{filter:brightness(1.35) drop-shadow(0 0 10px currentColor)}
 #mapa-canvas .mline{fill:none;stroke-dasharray:400;animation:dr 1.6s ease-out forwards}
 #mapa-canvas .mtxt{font-family:var(--font-sans);pointer-events:none}
 #mapa-canvas .mmono{font-family:var(--font-mono);pointer-events:none}
@@ -395,6 +396,7 @@ const App = {
     const estudios = this.data.estudios||[];
     const carreras = [...new Set(estudios.map(e=>e.carrera))].filter(Boolean);
     const empleo = this.data.empleo||[];
+    const empActual = empleo.find(e=>e.estado==='actual');
     const empActivas = empleo.filter(e=>['aplicado','entrevista','pendiente'].includes(e.estado)).length;
     const vaultN = (this.data.vault||[]).length;
 
@@ -410,7 +412,7 @@ const App = {
         leaves: carreras.map(c=>({label:short(c), sub:'ULACIT', fn:()=>this.abrirModalUlacit()})),
         fn:()=>this.abrirModalUlacit() },
       { label:'EMPLEO', color:'#EF9F27', bg:'#231708', angle:135,
-        leaves: [ empActivas? {label:empActivas+' aplicaciones', sub:'en proceso', fn:()=>this.abrirModalEmpleo()} : {label:'En búsqueda', sub:'agregar', fn:()=>this.abrirModalEmpleo()} ],
+        leaves: [ empActual? {label:empActual.empresa, sub:empActual.puesto, fn:()=>this.abrirModalEmpleo()} : (empActivas? {label:empActivas+' aplicaciones', sub:'en proceso', fn:()=>this.abrirModalEmpleo()} : {label:'En búsqueda', sub:'agregar', fn:()=>this.abrirModalEmpleo()}) ],
         fn:()=>this.abrirModalEmpleo() },
       { label:'PATRIMONIO', color:'#AFA9EC', bg:'#181530', angle:45,
         leaves: [{label:vaultN+' documentos', sub:'Vault', fn:()=>this.abrirModalVault()}],
@@ -556,13 +558,21 @@ const App = {
   renderEmpleo() {
     const el = document.querySelector('[data-modulo="empleo"]');
     const emp = this.data.empleo || [];
-    const activas = emp.filter(e => ['aplicado','entrevista','pendiente'].includes(e.estado)).length;
-    const prox = emp.find(e => e.estado === 'entrevista');
+    const actual = emp.find(e => e.estado === 'actual');
     el.className = 'mod c-amber mod-clickable';
-    el.innerHTML =
-      '<div class="mod-lbl">EMPLEO</div>' +
-      '<div class="mod-title">'+activas+' activa'+(activas===1?'':'s')+'</div>' +
-      '<div class="mod-sub">'+(prox ? 'entrevista: '+esc(prox.empresa) : (emp.length? 'sin entrevistas':'agregar aplicación'))+'</div>';
+    if (actual) {
+      el.innerHTML =
+        '<div class="mod-lbl">EMPLEO</div>' +
+        '<div class="mod-title">'+esc(actual.empresa)+'</div>' +
+        '<div class="mod-sub">'+esc(actual.puesto)+'</div>';
+    } else {
+      const activas = emp.filter(e => ['aplicado','entrevista','pendiente'].includes(e.estado)).length;
+      const prox = emp.find(e => e.estado === 'entrevista');
+      el.innerHTML =
+        '<div class="mod-lbl">EMPLEO</div>' +
+        '<div class="mod-title">'+activas+' activa'+(activas===1?'':'s')+'</div>' +
+        '<div class="mod-sub">'+(prox ? 'entrevista: '+esc(prox.empresa) : (emp.length? 'sin entrevistas':'agregar aplicación'))+'</div>';
+    }
     el.onclick = () => this.abrirModalEmpleo();
   },
 
@@ -885,15 +895,32 @@ const App = {
   // ===== Empleo modal =====
   abrirModalEmpleo() {
     const emp = this.data.empleo || [];
-    let rows = emp.length ? emp.map(e =>
+    const actual = emp.find(e => e.estado === 'actual');
+    const historial = emp.filter(e => e.estado !== 'actual');
+    let rows = historial.length ? historial.map(e =>
       '<tr><td>'+esc(e.empresa)+'</td><td>'+esc(e.puesto)+'</td><td>'+esc(e.fecha_aplicacion)+'</td><td>'+esc(e.estado)+'</td>' +
       '<td class="row-actions">'+
         '<button class="icon-btn" onclick=\'App.formEmpleo('+JSON.stringify(e).replace(/'/g,"&#39;")+')\'>✎</button>'+
         '<button class="icon-btn danger" onclick="App.eliminarEmpleo('+e.id+')">✕</button>'+
       '</td></tr>').join('')
-      : '<tr><td colspan="5" class="empty">Sin aplicaciones aún</td></tr>';
+      : '<tr><td colspan="5" class="empty">Sin aplicaciones en historial</td></tr>';
+    const fichaActual = actual ?
+      '<div class="ficha-card" style="border-color:#7A4B0E">' +
+        '<div class="ficha-cat" style="color:#EF9F27">◆ EMPLEO ACTUAL</div>' +
+        '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px">' +
+          '<div><div class="mod-title" style="font-size:19px">'+esc(actual.empresa)+'</div><div class="mod-sub" style="margin-top:2px">'+esc(actual.puesto)+'</div></div>' +
+          '<div class="row-actions">'+
+            '<button class="icon-btn" onclick=\'App.formEmpleo('+JSON.stringify(actual).replace(/'/g,"&#39;")+')\'>✎</button>'+
+            '<button class="icon-btn danger" onclick="App.eliminarEmpleo('+actual.id+')">✕</button>'+
+          '</div>' +
+        '</div>' +
+        (actual.notas ? '<div class="mod-sub" style="margin-top:10px;white-space:pre-wrap;line-height:1.5">'+esc(actual.notas)+'</div>' : '') +
+      '</div>'
+      : '';
     this.abrirModal(
-      '<div class="modal-head"><div><span class="mono">◆ EMPLEO</span><h2>Búsqueda de empleo</h2></div><button class="modal-x" onclick="App.cerrarModal()">✕</button></div>' +
+      '<div class="modal-head"><div><span class="mono">◆ EMPLEO</span><h2>'+(actual?'Empleo':'Búsqueda de empleo')+'</h2></div><button class="modal-x" onclick="App.cerrarModal()">✕</button></div>' +
+      fichaActual +
+      '<div class="mod-lbl" style="color:var(--text-mute);margin-top:'+(actual?'18px':'0')+'">'+(actual?'HISTORIAL DE APLICACIONES':'')+'</div>' +
       '<table class="data"><thead><tr><th>Empresa</th><th>Puesto</th><th>Fecha</th><th>Estado</th><th></th></tr></thead><tbody>'+rows+'</tbody></table>' +
       '<button class="btn-add" onclick="App.formEmpleo()">+ Agregar aplicación</button>'
     );
@@ -906,7 +933,7 @@ const App = {
       '<label class="fld">EMPRESA</label><input id="f-empresa" value="'+esc(e.empresa||'')+'">' +
       '<label class="fld">PUESTO</label><input id="f-puesto" value="'+esc(e.puesto||'')+'">' +
       '<label class="fld">FECHA DE APLICACIÓN</label><input id="f-fecha" type="date" value="'+esc(e.fecha_aplicacion||'')+'">' +
-      '<label class="fld">ESTADO</label><select id="f-estado">'+opt('aplicado','aplicado')+opt('entrevista','entrevista')+opt('pendiente','pendiente')+opt('rechazado','rechazado')+opt('aceptado','aceptado')+'</select>' +
+      '<label class="fld">ESTADO</label><select id="f-estado">'+opt('aplicado','aplicado')+opt('entrevista','entrevista')+opt('pendiente','pendiente')+opt('rechazado','rechazado')+opt('aceptado','aceptado')+opt('actual','actual (mi empleo actual)')+'</select>' +
       '<label class="fld">FUENTE</label><input id="f-fuente" value="'+esc(e.fuente||'')+'" placeholder="LinkedIn, referido…">' +
       '<label class="fld">NOTAS</label><input id="f-notas" value="'+esc(e.notas||'')+'">' +
       '<div><button class="btn-primary" onclick="App.guardarEmpleo('+(e.id||'null')+')">Guardar</button> <button class="btn-ghost" onclick="App.abrirModalEmpleo()">Cancelar</button></div>'
