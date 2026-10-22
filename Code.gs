@@ -19,7 +19,7 @@ const HOJAS = {
   Contactos:   ['id','nombre','organizacion','rol','email','telefono','notas'],
   Empresa:     ['id','categoria','campo','valor'],
   Bitacora:    ['id','fecha','etiqueta','vinculo','texto','autor'],
-  Obligaciones:['id','nombre','acreedor','monto_total','moneda','mi_parte','dia_limite','frecuencia','reembolso','desde','activa','notas'],
+  Obligaciones:['id','nombre','acreedor','monto_total','moneda','mi_parte','dia_limite','frecuencia','reembolso','desde','activa','notas','dia_corte'],
   Pagos:       ['id','obligacion_id','periodo','fecha_pago','monto','moneda','reembolsado','notas'],
   Actividad:   ['timestamp','usuario','accion','hoja','detalle'],
   Config:      ['clave','valor']
@@ -300,6 +300,12 @@ function agendaFinanzas() {
   const periodoActual = hy + '-' + String(hm).padStart(2, '0');
 
   const items = [], cobros = [];
+  const cortes = obligaciones.filter(o => Number(o.dia_corte)).map(o => {
+    const ultimo = new Date(Date.UTC(hy, hm, 0)).getUTCDate();
+    let c = Date.UTC(hy, hm - 1, Math.min(Number(o.dia_corte), ultimo));
+    if (c < hoy) { const u2 = new Date(Date.UTC(hy, hm + 1, 0)).getUTCDate(); c = Date.UTC(hy, hm, Math.min(Number(o.dia_corte), u2)); }
+    return {nombre: o.nombre, fecha: Utilities.formatDate(new Date(c), 'UTC', 'yyyy-MM-dd'), dias: Math.round((c - hoy) / DIA)};
+  }).sort((a, b) => a.dias - b.dias);
   let totalMes = 0, pagadoMes = 0;
 
   obligaciones.forEach(o => {
@@ -333,7 +339,7 @@ function agendaFinanzas() {
   });
   items.sort((a, b) => a.dias - b.dias);
   return {hoy: Utilities.formatDate(new Date(hoy), 'UTC', 'yyyy-MM-dd'), tc, periodo: periodoActual,
-          total_mes: totalMes, pagado_mes: pagadoMes, pendiente_mes: totalMes - pagadoMes, items, cobros};
+          total_mes: totalMes, pagado_mes: pagadoMes, pendiente_mes: totalMes - pagadoMes, items, cobros, cortes};
 }
 
 function recordatorioDiario() {
@@ -358,6 +364,9 @@ function recordatorioDiario() {
     html += '<h3 style="margin:18px 0 6px">Por cobrar</h3><ul style="margin:0;padding-left:18px">' +
       a.cobros.map(c => '<li>' + c.obligacion + ' (' + c.periodo + '): ' + c.detalle + '</li>').join('') + '</ul>';
   }
+  const cortesCerca = a.cortes.filter(c => c.dias <= 3);
+  if (cortesCerca.length) html += '<h3 style="margin:18px 0 6px">Cortes de tarjeta</h3><ul style="margin:0;padding-left:18px">' +
+    cortesCerca.map(c => '<li>' + c.nombre + ': corte ' + (c.dias === 0 ? 'HOY' : 'en ' + c.dias + (c.dias === 1 ? ' día' : ' días')) + ' (' + fecha(c.fecha) + '). Lo que compres después pasa al siguiente estado de cuenta.</li>').join('') + '</ul>';
   if (proximos.length) html += '<h3 style="margin:18px 0 6px">Lo que sigue</h3><table style="border-collapse:collapse">' + proximos.map(fila).join('') + '</table>';
   html += '<div style="margin-top:18px;padding-top:12px;border-top:1px solid #ddd">Este mes: ' + crc(a.total_mes) + ' en total · pagado ' + crc(a.pagado_mes) + ' · <b>falta ' + crc(a.pendiente_mes) + '</b></div>';
   html += '<div style="margin-top:14px"><a href="https://vida-panel.pages.dev">Abrir el Vida Panel</a> para marcar lo pagado.</div></div>';

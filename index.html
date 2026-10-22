@@ -622,7 +622,7 @@ const App = {
     const obl = this.data.obligaciones || [];
     const rows = f.items.length ? f.items.map(i => {
       const o = obl.find(x => String(x.id)===String(i.id)) || {};
-      return '<tr><td>'+esc(i.nombre)+'<div class="mod-sub" style="font-size:11px;opacity:.7">'+esc(i.acreedor||'')+'</div></td>' +
+      return '<tr><td>'+esc(i.nombre)+'<div class="mod-sub" style="font-size:11px;opacity:.7">'+esc(i.acreedor||'')+(o.dia_corte?' · corte el '+esc(o.dia_corte):'')+'</div></td>' +
         '<td>'+this.finFecha(i.vence)+'<div style="font-size:11px;color:'+this.finColor[i.estado]+'">'+this.finCuando(i)+'</div></td>' +
         '<td style="white-space:nowrap">'+this.finMonto(i)+'</td>' +
         '<td class="row-actions">' +
@@ -657,6 +657,7 @@ const App = {
       '<label class="fld">CUOTA TOTAL</label><input id="o-total" type="number" step="0.01" value="'+esc(o.monto_total||'')+'">' +
       '<label class="fld">MI PARTE (lo que pago yo)</label><input id="o-parte" type="number" step="0.01" value="'+esc(o.mi_parte||'')+'">' +
       '<label class="fld">DÍA LÍMITE DEL MES</label><input id="o-dia" type="number" min="1" max="31" value="'+esc(o.dia_limite||'')+'">' +
+      '<label class="fld">DÍA DE CORTE (solo tarjetas)</label><input id="o-corte" type="number" min="1" max="31" value="'+esc(o.dia_corte||'')+'">' +
       '<label class="fld">REEMBOLSO (opcional)</label><input id="o-reembolso" value="'+esc(o.reembolso||'')+'" placeholder="Ej: Papi me devuelve $452">' +
       '<label class="fld">EMPIEZA EN (mes)</label><input id="o-desde" type="month" value="'+esc(per(o.desde)||hoy)+'">' +
       '<label class="fld">NOTAS</label><input id="o-notas" value="'+esc(o.notas||'')+'">' +
@@ -667,7 +668,7 @@ const App = {
     const v = k => document.getElementById(k).value;
     const datos = { nombre:v('o-nombre'), acreedor:v('o-acreedor'), moneda:v('o-moneda'), monto_total:v('o-total'),
       mi_parte:v('o-parte') || v('o-total'), dia_limite:v('o-dia'), frecuencia:'mensual', reembolso:v('o-reembolso'),
-      desde:v('o-desde'), activa:'sí', notas:v('o-notas') };
+      desde:v('o-desde'), activa:'sí', notas:v('o-notas'), dia_corte:v('o-corte') };
     if (!datos.nombre || !datos.dia_limite) { App.toast('Poné nombre y día límite', 'err'); return; }
     try {
       await this.api(id ? {accion:'editar_fila',hoja:'Obligaciones',id,datos} : {accion:'agregar_fila',hoja:'Obligaciones',datos});
