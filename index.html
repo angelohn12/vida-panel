@@ -608,7 +608,7 @@ const App = {
     el.innerHTML =
       '<div class="mod-lbl">FINANZAS · PAGOS FIJOS</div>' +
       '<div style="display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap">' +
-        '<div><div class="mod-title">'+this.finCrc(prox30)+'</div><div class="mod-sub">a pagar en los próximos 30 días'+(f.cobros.length?' · '+f.cobros.length+' por cobrar':'')+'</div></div>' +
+        '<div><div class="mod-title">'+this.finCrc(prox30)+'</div><div class="mod-sub">a pagar en los próximos 30 días'+'</div></div>' +
         '<div style="display:flex;gap:18px;flex-wrap:wrap">' + f.items.slice(0,4).map(i =>
           '<div style="min-width:120px"><div style="font-size:13px">'+esc(i.nombre)+'</div>' +
           '<div class="mono" style="font-size:11px;color:'+this.finColor[i.estado]+'">'+this.finFecha(i.vence)+' · '+this.finCuando(i)+'</div></div>').join('') +
@@ -631,17 +631,10 @@ const App = {
           '<button class="icon-btn danger" onclick="App.eliminarObligacion('+i.id+')">✕</button>' +
         '</td></tr>';
     }).join('') : '<tr><td colspan="4" class="empty">Sin obligaciones</td></tr>';
-    const cobros = f.cobros.length ?
-      '<div class="mod-lbl" style="color:var(--text-mute);margin-top:18px">POR COBRAR</div>' +
-      '<table class="data"><tbody>' + f.cobros.map(c =>
-        '<tr><td>'+esc(c.obligacion)+' · '+esc(c.periodo)+'</td><td>'+esc(c.detalle)+'</td>' +
-        '<td class="row-actions"><button class="btn-ghost" style="padding:4px 10px" onclick="App.marcarCobrado('+c.pago_id+')">✓ Ya me pagó</button></td></tr>').join('') +
-      '</tbody></table>' : '';
     this.abrirModal(
       '<div class="modal-head"><div><span class="mono">◆ FINANZAS</span><h2>Pagos fijos</h2></div><button class="modal-x" onclick="App.cerrarModal()">✕</button></div>' +
       '<div class="mod-sub" style="margin-bottom:12px">Tipo de cambio '+this.finCrc(f.tc)+' por dólar · correo diario 6:30am con lo que vence</div>' +
       '<table class="data"><thead><tr><th>Obligación</th><th>Vence</th><th>Mi parte</th><th></th></tr></thead><tbody>'+rows+'</tbody></table>' +
-      cobros +
       '<button class="btn-add" onclick="App.formObligacion()">+ Agregar obligación</button>', true
     );
   },
@@ -658,8 +651,7 @@ const App = {
       '<label class="fld">MI PARTE (lo que pago yo)</label><input id="o-parte" type="number" step="0.01" value="'+esc(o.mi_parte||'')+'">' +
       '<label class="fld">DÍA LÍMITE DEL MES</label><input id="o-dia" type="number" min="1" max="31" value="'+esc(o.dia_limite||'')+'">' +
       '<label class="fld">DÍA DE CORTE (solo tarjetas)</label><input id="o-corte" type="number" min="1" max="31" value="'+esc(o.dia_corte||'')+'">' +
-      '<label class="fld">REEMBOLSO (opcional)</label><input id="o-reembolso" value="'+esc(o.reembolso||'')+'" placeholder="Ej: Papi me devuelve $452">' +
-      '<label class="fld">EMPIEZA EN (mes)</label><input id="o-desde" type="month" value="'+esc(per(o.desde)||hoy)+'">' +
+            '<label class="fld">EMPIEZA EN (mes)</label><input id="o-desde" type="month" value="'+esc(per(o.desde)||hoy)+'">' +
       '<label class="fld">NOTAS</label><input id="o-notas" value="'+esc(o.notas||'')+'">' +
       '<div><button class="btn-primary" onclick="App.guardarObligacion('+(o.id||'null')+')">Guardar</button> <button class="btn-ghost" onclick="App.abrirModalFinanzas()">Cancelar</button></div>'
     );
@@ -667,7 +659,7 @@ const App = {
   async guardarObligacion(id) {
     const v = k => document.getElementById(k).value;
     const datos = { nombre:v('o-nombre'), acreedor:v('o-acreedor'), moneda:v('o-moneda'), monto_total:v('o-total'),
-      mi_parte:v('o-parte') || v('o-total'), dia_limite:v('o-dia'), frecuencia:'mensual', reembolso:v('o-reembolso'),
+      mi_parte:v('o-parte') || v('o-total'), dia_limite:v('o-dia'), frecuencia:'mensual', reembolso:'',
       desde:v('o-desde'), activa:'sí', notas:v('o-notas'), dia_corte:v('o-corte') };
     if (!datos.nombre || !datos.dia_limite) { App.toast('Poné nombre y día límite', 'err'); return; }
     try {
@@ -683,12 +675,8 @@ const App = {
   async marcarPagado(i) {
     if (!confirm('¿Marcar '+i.nombre+' ('+i.periodo+') como pagado?')) return;
     const datos = { obligacion_id:i.id, periodo:i.periodo, fecha_pago:new Date().toISOString().slice(0,10),
-      monto:i.mi_parte, moneda:i.moneda, reembolsado: i.reembolso ? 'no' : '' };
+      monto:i.mi_parte, moneda:i.moneda, reembolsado: '' };
     try { await this.api({accion:'agregar_fila',hoja:'Pagos',datos}); await this.recargar(); this.abrirModalFinanzas(); App.toast(i.nombre+' marcado como pagado'); }
-    catch(e){ App.toast('Error: '+e.message, 'err'); }
-  },
-  async marcarCobrado(pagoId) {
-    try { await this.api({accion:'editar_fila',hoja:'Pagos',id:pagoId,datos:{reembolsado:'sí'}}); await this.recargar(); this.abrirModalFinanzas(); }
     catch(e){ App.toast('Error: '+e.message, 'err'); }
   },
 

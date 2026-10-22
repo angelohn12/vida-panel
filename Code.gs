@@ -360,10 +360,6 @@ function recordatorioDiario() {
   html += urgentes.length
     ? '<h3 style="margin:0 0 6px">Para atender ya</h3><table style="border-collapse:collapse">' + urgentes.map(fila).join('') + '</table>'
     : '<p style="margin:0 0 6px">Nada vence en los próximos ' + DIAS_AVISO + ' días.</p>';
-  if (a.cobros.length) {
-    html += '<h3 style="margin:18px 0 6px">Por cobrar</h3><ul style="margin:0;padding-left:18px">' +
-      a.cobros.map(c => '<li>' + c.obligacion + ' (' + c.periodo + '): ' + c.detalle + '</li>').join('') + '</ul>';
-  }
   const cortesCerca = a.cortes.filter(c => c.dias <= 3);
   if (cortesCerca.length) html += '<h3 style="margin:18px 0 6px">Cortes de tarjeta</h3><ul style="margin:0;padding-left:18px">' +
     cortesCerca.map(c => '<li>' + c.nombre + ': corte ' + (c.dias === 0 ? 'HOY' : 'en ' + c.dias + (c.dias === 1 ? ' día' : ' días')) + ' (' + fecha(c.fecha) + '). Lo que compres después pasa al siguiente estado de cuenta.</li>').join('') + '</ul>';
