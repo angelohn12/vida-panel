@@ -19,6 +19,8 @@ const HOJAS = {
   Contactos:   ['id','nombre','organizacion','rol','email','telefono','notas'],
   Empresa:     ['id','categoria','campo','valor'],
   Bitacora:    ['id','fecha','etiqueta','vinculo','texto','autor'],
+  Obligaciones:['id','nombre','acreedor','monto_total','moneda','mi_parte','dia_limite','frecuencia','reembolso','desde','activa','notas'],
+  Pagos:       ['id','obligacion_id','periodo','fecha_pago','monto','moneda','reembolsado','notas'],
   Actividad:   ['timestamp','usuario','accion','hoja','detalle'],
   Config:      ['clave','valor']
 };
@@ -51,7 +53,7 @@ function ensureSetup() {
 function doGet(e) {
   ensureSetup();
   if (!e.parameter || e.parameter.key !== CLAVE) return json({ok:false,error:'unauthorized'});
-  if (e.parameter.accion === 'leer') return json({ok:true, ...leerTodo()});
+  if (e.parameter.accion === 'leer') return json({ok:true, ...leerTodo(), finanzas: agendaFinanzas()});
   return json({ok:false,error:'accion desconocida'});
 }
 
@@ -67,6 +69,7 @@ function doPost(e) {
       case 'subir_documento':        return json({ok:true, ...subirDocumento(body.datos)});
       case 'eliminar_documento':     eliminarDocumento(body.id); return json({ok:true});
       case 'leer_dashboard_externo': return json({ok:true, data: leerExterno(body.id)});
+      case 'probar_recordatorio':    recordatorioDiario(); return json({ok:true});
     }
     return json({ok:false,error:'accion desconocida'});
   } catch(err) {
@@ -246,4 +249,129 @@ function registrarActividad(accion, hoja, detalle) {
 
 function json(obj) {
   return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);
+}
+
+
+// ============================================================
+//  FINANZAS — obligaciones fijas, pagos y recordatorio diario
+// ============================================================
+//  Obligaciones: una fila por pago fijo (dia_limite = día del mes).
+//  Pagos: una fila por obligación pagada en un periodo (YYYY-MM).
+//  "desde" = primer periodo que se cobra (evita marcar atrasos viejos).
+//  Si la obligación tiene "reembolso", el pago queda pendiente de
+//  cobro hasta que reembolsado = 'sí'.
+// ============================================================
+
+const DIAS_AVISO = 5;
+
+function filasHoja(nombre) {
+  const filas = SpreadsheetApp.openById(SHEET_ID).getSheetByName(nombre).getDataRange().getValues();
+  const cab = filas.shift();
+  return filas.map(f => Object.fromEntries(cab.map((c,i) => [c, f[i]])));
+}
+
+// Sheets convierte "2026-10" en fecha; esto lo devuelve a texto.
+function normPeriodo(v) {
+  if (v instanceof Date) return Utilities.formatDate(v, 'America/Costa_Rica', 'yyyy-MM');
+  return String(v || '').trim().slice(0, 7);
+}
+
+function tipoCambio() {
+  const cache = CacheService.getScriptCache();
+  const enCache = cache.get('tc_usd_crc');
+  if (enCache) return Number(enCache);
+  try {
+    const r = JSON.parse(UrlFetchApp.fetch('https://open.er-api.com/v6/latest/USD', {muteHttpExceptions:true}).getContentText());
+    const tc = r && r.rates && r.rates.CRC;
+    if (tc) { cache.put('tc_usd_crc', String(tc), 21600); setConfig('tc_usd_crc', tc); return tc; }
+  } catch (e) {}
+  return Number(leerConfig().tc_usd_crc) || 510;
+}
+
+function agendaFinanzas() {
+  const tz = 'America/Costa_Rica';
+  const [hy, hm, hd] = Utilities.formatDate(new Date(), tz, 'yyyy-MM-dd').split('-').map(Number);
+  const hoy = Date.UTC(hy, hm - 1, hd);
+  const DIA = 86400000;
+  const tc = tipoCambio();
+  const aColones = (monto, moneda) => Math.round(Number(monto || 0) * (String(moneda).toUpperCase() === 'USD' ? tc : 1));
+  const obligaciones = filasHoja('Obligaciones').filter(o => o.id !== '' && String(o.activa).toLowerCase() !== 'no');
+  const pagos = filasHoja('Pagos').map(p => Object.assign(p, {periodo: normPeriodo(p.periodo)}));
+  const periodoActual = hy + '-' + String(hm).padStart(2, '0');
+
+  const items = [], cobros = [];
+  let totalMes = 0, pagadoMes = 0;
+
+  obligaciones.forEach(o => {
+    const desde = normPeriodo(o.desde) || periodoActual;
+    const parte = o.mi_parte !== '' ? o.mi_parte : o.monto_total;
+    const crc = aColones(parte, o.moneda);
+    let siguiente = null;
+    for (let k = -3; k <= 2; k++) {
+      const y = hy + Math.floor((hm - 1 + k) / 12), m = ((hm - 1 + k) % 12 + 12) % 12;
+      const periodo = y + '-' + String(m + 1).padStart(2, '0');
+      if (periodo < desde) continue;
+      const ultimo = new Date(Date.UTC(y, m + 1, 0)).getUTCDate();
+      const venc = Date.UTC(y, m, Math.min(Number(o.dia_limite) || 1, ultimo));
+      const pago = pagos.find(p => String(p.obligacion_id) === String(o.id) && p.periodo === periodo);
+      if (periodo === periodoActual) { totalMes += crc; if (pago) pagadoMes += crc; }
+      if (pago) {
+        if (o.reembolso && String(pago.reembolsado).toLowerCase() !== 'sí')
+          cobros.push({pago_id: pago.id, obligacion: o.nombre, detalle: o.reembolso, periodo, monto: pago.monto || parte, moneda: pago.moneda || o.moneda});
+        continue;
+      }
+      if (!siguiente) siguiente = {periodo, venc};
+    }
+    if (!siguiente) return;
+    const dias = Math.round((siguiente.venc - hoy) / DIA);
+    items.push({
+      id: o.id, nombre: o.nombre, acreedor: o.acreedor, periodo: siguiente.periodo,
+      vence: Utilities.formatDate(new Date(siguiente.venc), 'UTC', 'yyyy-MM-dd'), dias,
+      estado: dias < 0 ? 'atrasada' : dias === 0 ? 'hoy' : dias <= DIAS_AVISO ? 'pronto' : 'al_dia',
+      mi_parte: parte, moneda: o.moneda, crc, reembolso: o.reembolso, notas: o.notas
+    });
+  });
+  items.sort((a, b) => a.dias - b.dias);
+  return {hoy: Utilities.formatDate(new Date(hoy), 'UTC', 'yyyy-MM-dd'), tc, periodo: periodoActual,
+          total_mes: totalMes, pagado_mes: pagadoMes, pendiente_mes: totalMes - pagadoMes, items, cobros};
+}
+
+function recordatorioDiario() {
+  const a = agendaFinanzas();
+  const crc = n => '₡' + Math.round(n).toLocaleString('es-CR');
+  const monto = i => (String(i.moneda).toUpperCase() === 'USD' ? '$' + Number(i.mi_parte).toLocaleString('es-CR') + ' (' + crc(i.crc) + ')' : crc(i.crc));
+  const fecha = s => { const p = s.split('-'); return p[2] + '/' + p[1]; };
+  const cuando = i => i.dias < 0 ? 'atrasado ' + (-i.dias) + (i.dias === -1 ? ' día' : ' días') : i.dias === 0 ? 'vence HOY' : 'en ' + i.dias + (i.dias === 1 ? ' día' : ' días');
+  const color = {atrasada:'#C0392B', hoy:'#C0392B', pronto:'#B9770E', al_dia:'#555'};
+  const fila = i => '<tr><td style="padding:6px 10px 6px 0"><b>' + i.nombre + '</b><br><span style="color:#777;font-size:12px">' + (i.acreedor || '') + (i.reembolso ? ' · ' + i.reembolso : '') + '</span></td>' +
+    '<td style="padding:6px 10px;white-space:nowrap">' + monto(i) + '</td>' +
+    '<td style="padding:6px 0;white-space:nowrap;color:' + color[i.estado] + '">' + fecha(i.vence) + ' · ' + cuando(i) + '</td></tr>';
+
+  const urgentes = a.items.filter(i => i.estado !== 'al_dia');
+  const proximos = a.items.filter(i => i.estado === 'al_dia');
+  let html = '<div style="font-family:Arial,sans-serif;font-size:14px;color:#222;max-width:600px">';
+  html += '<h2 style="margin:0 0 4px">Finanzas del día</h2><div style="color:#777;margin-bottom:16px">' + fecha(a.hoy) + ' · tipo de cambio ' + crc(a.tc) + ' por dólar</div>';
+  html += urgentes.length
+    ? '<h3 style="margin:0 0 6px">Para atender ya</h3><table style="border-collapse:collapse">' + urgentes.map(fila).join('') + '</table>'
+    : '<p style="margin:0 0 6px">Nada vence en los próximos ' + DIAS_AVISO + ' días.</p>';
+  if (a.cobros.length) {
+    html += '<h3 style="margin:18px 0 6px">Por cobrar</h3><ul style="margin:0;padding-left:18px">' +
+      a.cobros.map(c => '<li>' + c.obligacion + ' (' + c.periodo + '): ' + c.detalle + '</li>').join('') + '</ul>';
+  }
+  if (proximos.length) html += '<h3 style="margin:18px 0 6px">Lo que sigue</h3><table style="border-collapse:collapse">' + proximos.map(fila).join('') + '</table>';
+  html += '<div style="margin-top:18px;padding-top:12px;border-top:1px solid #ddd">Este mes: ' + crc(a.total_mes) + ' en total · pagado ' + crc(a.pagado_mes) + ' · <b>falta ' + crc(a.pendiente_mes) + '</b></div>';
+  html += '<div style="margin-top:14px"><a href="https://vida-panel.pages.dev">Abrir el Vida Panel</a> para marcar lo pagado.</div></div>';
+
+  const asunto = urgentes.length
+    ? 'Finanzas: ' + urgentes.map(i => i.nombre + ' ' + cuando(i)).join(' · ')
+    : 'Finanzas del día: todo al día';
+  MailApp.sendEmail({to: Session.getEffectiveUser().getEmail(), subject: asunto, htmlBody: html});
+}
+
+// Correr UNA VEZ desde el editor (botón Ejecutar) para autorizar y activar el correo diario.
+function instalarRecordatorios() {
+  ScriptApp.getProjectTriggers().filter(t => t.getHandlerFunction() === 'recordatorioDiario').forEach(t => ScriptApp.deleteTrigger(t));
+  ScriptApp.newTrigger('recordatorioDiario').timeBased().everyDays(1).atHour(6).nearMinute(30).inTimezone('America/Costa_Rica').create();
+  ensureSetup();
+  recordatorioDiario();
 }

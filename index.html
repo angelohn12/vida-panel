@@ -90,6 +90,9 @@ button{font-family:inherit}
 .rings svg{width:100%;height:100%;animation:rot 14s linear infinite}
 
 /* ===== color por módulo ===== */
+.c-green{background:#0C1C13;border:1px solid #1F5A36;--shadow-color:rgba(111,208,140,.28);--spot-color:rgba(111,208,140,.15)}
+.c-green .mod-lbl{color:#6FD08C}.c-green::after{border-top:1px solid #6FD08C;border-right:1px solid #6FD08C}.c-green::before{border-bottom:1px solid #6FD08C;border-left:1px solid #6FD08C}
+.c-green .mod-sub{color:#6FD08C}.c-green .btn-mod{color:#6FD08C;border-color:#1F5A36}
 .c-teal{background:#0E1F1D;border:1px solid #1D4D42;--shadow-color:rgba(29,158,117,.35);--spot-color:rgba(93,202,165,.16)}
 .c-teal .mod-lbl{color:#5DCAA5}.c-teal::after{border-top:1px solid #5DCAA5;border-right:1px solid #5DCAA5}.c-teal::before{border-bottom:1px solid #5DCAA5;border-left:1px solid #5DCAA5}
 .c-teal .mod-sub{color:#5DCAA5}.c-teal .big-num{color:#9FE1CB}.c-teal .chart-bars span{background:#1D9E75}.c-teal .pb{background:#1D4D42}.c-teal .pb>i{background:#5DCAA5}.c-teal .ticks{color:#5DCAA5}.c-teal .btn-mod{color:#5DCAA5;border-color:#1D4D42}.c-teal .btn-mod:hover{background:#0A1512}
@@ -271,6 +274,7 @@ label.fld{display:block;font-family:var(--font-mono);font-size:10px;letter-spaci
       <div class="mod c-amber"          data-modulo="empleo"></div>
       <div class="mod c-purple"         data-modulo="vault"></div>
       <div class="mod c-coral"          data-modulo="actividad" style="grid-column:2/4"></div>
+      <div class="mod c-green"          data-modulo="finanzas" style="grid-column:1/-1"></div>
     </div>
   </div>
 
@@ -339,7 +343,7 @@ const App = {
       const j = await r.json();
       if (!j.ok) return this.mostrarError(j.error || 'error de carga');
       this.data = j;
-      document.getElementById('foot-status').textContent = 'MÓDULOS · 6 ACTIVOS';
+      document.getElementById('foot-status').textContent = 'MÓDULOS · 7 ACTIVOS';
       this.render();
     } catch (e) {
       this.mostrarError('sin conexión (' + e.message + ')');
@@ -360,6 +364,7 @@ const App = {
     this.renderUlacit();
     this.renderEmpleo();
     this.renderVault();
+    this.renderFinanzas();
     this.renderActividad();
   },
 
@@ -415,7 +420,7 @@ const App = {
         leaves: [ empActual? {label:empActual.empresa, sub:empActual.puesto, fn:()=>this.abrirModalEmpleo()} : (empActivas? {label:empActivas+' aplicaciones', sub:'en proceso', fn:()=>this.abrirModalEmpleo()} : {label:'En búsqueda', sub:'agregar', fn:()=>this.abrirModalEmpleo()}) ],
         fn:()=>this.abrirModalEmpleo() },
       { label:'PATRIMONIO', color:'#AFA9EC', bg:'#181530', angle:45,
-        leaves: [{label:vaultN+' documentos', sub:'Vault', fn:()=>this.abrirModalVault()}],
+        leaves: [{label:vaultN+' documentos', sub:'Vault', fn:()=>this.abrirModalVault()}, {label:'Pagos fijos', sub:((this.data.finanzas||{}).items||[]).length+' obligaciones', fn:()=>this.abrirModalFinanzas()}],
         fn:()=>this.abrirModalVault() },
     ];
 
@@ -586,6 +591,104 @@ const App = {
       '<div class="mod-title">'+v.length+' doc'+(v.length===1?'':'s')+'</div>' +
       '<div class="mod-sub">'+(v.length? 'en Drive privado':'subir documentos')+'</div>';
     el.onclick = () => this.abrirModalVault();
+  },
+
+  // ===== Finanzas (obligaciones fijas) =====
+  finCrc(n) { return '₡' + Math.round(Number(n)||0).toLocaleString('es-CR'); },
+  finMonto(i) { return String(i.moneda).toUpperCase()==='USD' ? '$'+Number(i.mi_parte).toLocaleString('es-CR')+' · '+this.finCrc(i.crc) : this.finCrc(i.crc); },
+  finCuando(i) { return i.dias<0 ? 'atrasado '+(-i.dias)+(i.dias===-1?' día':' días') : i.dias===0 ? 'vence hoy' : 'en '+i.dias+(i.dias===1?' día':' días'); },
+  finFecha(s) { const p=String(s).split('-'); return p[2]+'/'+p[1]; },
+  finColor: {atrasada:'#F09595', hoy:'#F09595', pronto:'#EF9F27', al_dia:'#8FD9A8'},
+
+  renderFinanzas() {
+    const el = document.querySelector('[data-modulo="finanzas"]');
+    const f = this.data.finanzas || {items:[], cobros:[]};
+    const prox30 = f.items.filter(i => i.dias <= 30).reduce((s,i)=>s+i.crc, 0);
+    el.className = 'mod c-green mod-clickable';
+    el.innerHTML =
+      '<div class="mod-lbl">FINANZAS · PAGOS FIJOS</div>' +
+      '<div style="display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap">' +
+        '<div><div class="mod-title">'+this.finCrc(prox30)+'</div><div class="mod-sub">a pagar en los próximos 30 días'+(f.cobros.length?' · '+f.cobros.length+' por cobrar':'')+'</div></div>' +
+        '<div style="display:flex;gap:18px;flex-wrap:wrap">' + f.items.slice(0,4).map(i =>
+          '<div style="min-width:120px"><div style="font-size:13px">'+esc(i.nombre)+'</div>' +
+          '<div class="mono" style="font-size:11px;color:'+this.finColor[i.estado]+'">'+this.finFecha(i.vence)+' · '+this.finCuando(i)+'</div></div>').join('') +
+        (f.items.length ? '' : '<div class="mod-sub">agregar obligaciones</div>') + '</div>' +
+      '</div>';
+    el.onclick = () => this.abrirModalFinanzas();
+  },
+
+  abrirModalFinanzas() {
+    const f = this.data.finanzas || {items:[], cobros:[]};
+    const obl = this.data.obligaciones || [];
+    const rows = f.items.length ? f.items.map(i => {
+      const o = obl.find(x => String(x.id)===String(i.id)) || {};
+      return '<tr><td>'+esc(i.nombre)+'<div class="mod-sub" style="font-size:11px;opacity:.7">'+esc(i.acreedor||'')+'</div></td>' +
+        '<td>'+this.finFecha(i.vence)+'<div style="font-size:11px;color:'+this.finColor[i.estado]+'">'+this.finCuando(i)+'</div></td>' +
+        '<td style="white-space:nowrap">'+this.finMonto(i)+'</td>' +
+        '<td class="row-actions">' +
+          '<button class="btn-ghost" style="padding:4px 10px" onclick=\'App.marcarPagado('+JSON.stringify(i).replace(/'/g,"&#39;")+')\'>✓ Pagué</button>' +
+          '<button class="icon-btn" onclick=\'App.formObligacion('+JSON.stringify(o).replace(/'/g,"&#39;")+')\'>✎</button>' +
+          '<button class="icon-btn danger" onclick="App.eliminarObligacion('+i.id+')">✕</button>' +
+        '</td></tr>';
+    }).join('') : '<tr><td colspan="4" class="empty">Sin obligaciones</td></tr>';
+    const cobros = f.cobros.length ?
+      '<div class="mod-lbl" style="color:var(--text-mute);margin-top:18px">POR COBRAR</div>' +
+      '<table class="data"><tbody>' + f.cobros.map(c =>
+        '<tr><td>'+esc(c.obligacion)+' · '+esc(c.periodo)+'</td><td>'+esc(c.detalle)+'</td>' +
+        '<td class="row-actions"><button class="btn-ghost" style="padding:4px 10px" onclick="App.marcarCobrado('+c.pago_id+')">✓ Ya me pagó</button></td></tr>').join('') +
+      '</tbody></table>' : '';
+    this.abrirModal(
+      '<div class="modal-head"><div><span class="mono">◆ FINANZAS</span><h2>Pagos fijos</h2></div><button class="modal-x" onclick="App.cerrarModal()">✕</button></div>' +
+      '<div class="mod-sub" style="margin-bottom:12px">Tipo de cambio '+this.finCrc(f.tc)+' por dólar · correo diario 6:30am con lo que vence</div>' +
+      '<table class="data"><thead><tr><th>Obligación</th><th>Vence</th><th>Mi parte</th><th></th></tr></thead><tbody>'+rows+'</tbody></table>' +
+      cobros +
+      '<button class="btn-add" onclick="App.formObligacion()">+ Agregar obligación</button>', true
+    );
+  },
+  formObligacion(o) {
+    o = o || {};
+    const per = v => { const s = String(v||''); return /^\d{4}-\d{2}/.test(s) ? s.slice(0,7) : ''; };
+    const hoy = new Date().toISOString().slice(0,7);
+    this.abrirModal(
+      '<div class="modal-head"><div><span class="mono">◆ FINANZAS</span><h2>'+(o.id?'Editar':'Nueva')+' obligación</h2></div><button class="modal-x" onclick="App.abrirModalFinanzas()">✕</button></div>' +
+      '<label class="fld">NOMBRE</label><input id="o-nombre" value="'+esc(o.nombre||'')+'" placeholder="Ej: Tarjeta BAC">' +
+      '<label class="fld">ACREEDOR / DETALLE</label><input id="o-acreedor" value="'+esc(o.acreedor||'')+'">' +
+      '<label class="fld">MONEDA</label><select id="o-moneda"><option value="CRC"'+(o.moneda!=='USD'?' selected':'')+'>Colones (₡)</option><option value="USD"'+(o.moneda==='USD'?' selected':'')+'>Dólares ($)</option></select>' +
+      '<label class="fld">CUOTA TOTAL</label><input id="o-total" type="number" step="0.01" value="'+esc(o.monto_total||'')+'">' +
+      '<label class="fld">MI PARTE (lo que pago yo)</label><input id="o-parte" type="number" step="0.01" value="'+esc(o.mi_parte||'')+'">' +
+      '<label class="fld">DÍA LÍMITE DEL MES</label><input id="o-dia" type="number" min="1" max="31" value="'+esc(o.dia_limite||'')+'">' +
+      '<label class="fld">REEMBOLSO (opcional)</label><input id="o-reembolso" value="'+esc(o.reembolso||'')+'" placeholder="Ej: Papi me devuelve $452">' +
+      '<label class="fld">EMPIEZA EN (mes)</label><input id="o-desde" type="month" value="'+esc(per(o.desde)||hoy)+'">' +
+      '<label class="fld">NOTAS</label><input id="o-notas" value="'+esc(o.notas||'')+'">' +
+      '<div><button class="btn-primary" onclick="App.guardarObligacion('+(o.id||'null')+')">Guardar</button> <button class="btn-ghost" onclick="App.abrirModalFinanzas()">Cancelar</button></div>'
+    );
+  },
+  async guardarObligacion(id) {
+    const v = k => document.getElementById(k).value;
+    const datos = { nombre:v('o-nombre'), acreedor:v('o-acreedor'), moneda:v('o-moneda'), monto_total:v('o-total'),
+      mi_parte:v('o-parte') || v('o-total'), dia_limite:v('o-dia'), frecuencia:'mensual', reembolso:v('o-reembolso'),
+      desde:v('o-desde'), activa:'sí', notas:v('o-notas') };
+    if (!datos.nombre || !datos.dia_limite) { App.toast('Poné nombre y día límite', 'err'); return; }
+    try {
+      await this.api(id ? {accion:'editar_fila',hoja:'Obligaciones',id,datos} : {accion:'agregar_fila',hoja:'Obligaciones',datos});
+      await this.recargar(); this.abrirModalFinanzas();
+    } catch(e){ App.toast('Error: '+e.message, 'err'); }
+  },
+  async eliminarObligacion(id) {
+    if (!confirm('¿Eliminar esta obligación?')) return;
+    try { await this.api({accion:'eliminar_fila',hoja:'Obligaciones',id}); await this.recargar(); this.abrirModalFinanzas(); }
+    catch(e){ App.toast('Error: '+e.message, 'err'); }
+  },
+  async marcarPagado(i) {
+    if (!confirm('¿Marcar '+i.nombre+' ('+i.periodo+') como pagado?')) return;
+    const datos = { obligacion_id:i.id, periodo:i.periodo, fecha_pago:new Date().toISOString().slice(0,10),
+      monto:i.mi_parte, moneda:i.moneda, reembolsado: i.reembolso ? 'no' : '' };
+    try { await this.api({accion:'agregar_fila',hoja:'Pagos',datos}); await this.recargar(); this.abrirModalFinanzas(); App.toast(i.nombre+' marcado como pagado'); }
+    catch(e){ App.toast('Error: '+e.message, 'err'); }
+  },
+  async marcarCobrado(pagoId) {
+    try { await this.api({accion:'editar_fila',hoja:'Pagos',id:pagoId,datos:{reembolsado:'sí'}}); await this.recargar(); this.abrirModalFinanzas(); }
+    catch(e){ App.toast('Error: '+e.message, 'err'); }
   },
 
   // ===== Actividad 7 días =====
