@@ -68,7 +68,7 @@ Cosas que solo Anyelo puede hacer, una única vez:
     - `POST accion=eliminar_fila` → `{ok:true}`
     - `POST accion=subir_documento` → `{ok:true, drive_id, drive_link}`
     - `POST accion=leer_dashboard_externo` con `id ∈ {costa_pina, avellana}` → devuelve JSON crudo del dashboard externo
-  - Clave API compartida (`VIDA_KEY_2026!`) que se usará también en la Tarea 3 (proxy).
+  - Clave API compartida (`<clave-del-panel>`) que se usará también en la Tarea 3 (proxy).
   - Nombre corto para referirse a la URL: `WEB_APP_URL_VIDA`.
 
 - [ ] **Step 1 (Anyelo): Crear el Sheet vacío**
@@ -81,7 +81,7 @@ Cosas que solo Anyelo puede hacer, una única vez:
 
 ```javascript
 const SHEET_ID = 'PONER_ID_DEL_SHEET_AQUI';
-const CLAVE = 'VIDA_KEY_2026!';
+const CLAVE = '<clave-del-panel>';
 
 const HOJAS = {
   Perfil:      ['campo','valor','actualizado'],
@@ -107,9 +107,9 @@ function ensureSetup() {
   const cfg = ss.getSheetByName('Config');
   if (cfg.getLastRow() < 2) {
     cfg.appendRow(['costa_pina_url','https://script.google.com/macros/s/AKfycbwXcifOIRXjC3AHXnSNCQUfX6qveSUh_PXnWQbEuBiC3Y80eEb10Ulu7-b5FiSckpNg/exec']);
-    cfg.appendRow(['costa_pina_key','Jorisu123@']);
+    cfg.appendRow(['costa_pina_key','<clave-costa-pina>']);
     cfg.appendRow(['avellana_url','https://script.google.com/macros/s/AKfycbxQVdDsH_Qgg9MnRgb0rDyzYPkvRESEi2FGD-ENHeT9L7CMbZl_xTaVxDs0wfNe3tflMg/exec']);
-    cfg.appendRow(['avellana_key','Belleza2026!']);
+    cfg.appendRow(['avellana_key','<clave-avellana>']);
     cfg.appendRow(['vault_folder_id','']);
   }
 }
@@ -264,7 +264,7 @@ function json(obj) {
   - Copiar la URL `/exec` resultante y pasarla a Claude.
 
 - [ ] **Step 4 (Claude): Verificar que responde**
-  - Ejecutar: `curl -s -L "<URL /exec>?accion=leer&key=VIDA_KEY_2026%21"`
+  - Ejecutar: `curl -s -L "<URL /exec>?accion=leer&key=<clave-del-panel>"`
   - Esperado: JSON con `ok:true` y las 9 secciones (todas vacías excepto `config`). Confirma que `ensureSetup()` creó las hojas.
   - Verificar en el Sheet que las 9 pestañas aparecieron con sus encabezados.
 
@@ -384,7 +384,7 @@ function json(obj) {
 - Create: `C:\Users\Angelo\Documents\GitHub\vida-panel\functions\api\proxy.js`
 
 **Interfaces:**
-- Consumes: `WEB_APP_URL_VIDA` y `VIDA_KEY_2026!` como variables de entorno de Cloudflare Pages.
+- Consumes: `WEB_APP_URL_VIDA` y `<clave-del-panel>` como variables de entorno de Cloudflare Pages.
 - Produces:
   - Endpoint `/api/proxy` que acepta `GET` y `POST` desde el frontend.
   - Sirve como intermediario: el frontend nunca ve la URL del Apps Script ni la clave. Le pega a `/api/proxy?accion=...` (o POST) y el proxy re-lanza al Apps Script agregando la clave.
@@ -425,7 +425,7 @@ function json(obj) {
   - dash.cloudflare.com → Workers & Pages → `vida-panel` → Settings → Environment variables → Production.
   - Add variable:
     - `WEB_APP_URL_VIDA` = URL del Apps Script del Task 1 Step 3 (termina en `/exec`)
-    - `VIDA_KEY` = `VIDA_KEY_2026!`
+    - `VIDA_KEY` = `<clave-del-panel>`
   - Save. Redesplegar (Deployments → último deployment → Retry deployment).
 
 - [ ] **Step 3 (Anyelo + Claude): Verificar el proxy**

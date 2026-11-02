@@ -3,11 +3,12 @@
 // ============================================================
 //  Sheet: "Vida Master" — reemplazar el SHEET_ID abajo con el
 //  id real después de crear el Sheet en Google Drive.
-//  Clave API: se usa también en Cloudflare Pages como VIDA_KEY.
+//  Clave API: vive en Propiedades del script como VIDA_KEY (nunca
+//  en este archivo) y debe ser igual a VIDA_KEY de Cloudflare Pages.
+//  Las claves de Costa Piña y Avellana viven en la hoja Config.
 // ============================================================
 
 const SHEET_ID = '1qMQfUIe-ZfQHpSItaU_9lp9n9F7ExPGYkzdQSKms044';
-const CLAVE = 'VIDA_KEY_2026!';
 
 const HOJAS = {
   Perfil:      ['campo','valor','actualizado'],
@@ -19,7 +20,7 @@ const HOJAS = {
   Contactos:   ['id','nombre','organizacion','rol','email','telefono','notas'],
   Empresa:     ['id','categoria','campo','valor'],
   Bitacora:    ['id','fecha','etiqueta','vinculo','texto','autor'],
-  Obligaciones:['id','nombre','acreedor','monto_total','moneda','mi_parte','dia_limite','frecuencia','reembolso','desde','activa','notas','dia_corte'],
+  Obligaciones:['id','nombre','acreedor','monto_total','moneda','mi_parte','dia_limite','frecuencia','reembolso','desde','activa','notas','dia_corte','rebajo_cuenta'],
   Pagos:       ['id','obligacion_id','periodo','fecha_pago','monto','moneda','reembolsado','notas'],
   Actividad:   ['timestamp','usuario','accion','hoja','detalle'],
   Config:      ['clave','valor']
@@ -43,16 +44,21 @@ function ensureSetup() {
   const cfg = ss.getSheetByName('Config');
   if (cfg.getLastRow() < 2) {
     cfg.appendRow(['costa_pina_url','https://script.google.com/macros/s/AKfycbwXcifOIRXjC3AHXnSNCQUfX6qveSUh_PXnWQbEuBiC3Y80eEb10Ulu7-b5FiSckpNg/exec']);
-    cfg.appendRow(['costa_pina_key','Jorisu123@']);
+    cfg.appendRow(['costa_pina_key','']);
     cfg.appendRow(['avellana_url','https://script.google.com/macros/s/AKfycbxQVdDsH_Qgg9MnRgb0rDyzYPkvRESEi2FGD-ENHeT9L7CMbZl_xTaVxDs0wfNe3tflMg/exec']);
-    cfg.appendRow(['avellana_key','Belleza2026!']);
+    cfg.appendRow(['avellana_key','']);
     cfg.appendRow(['vault_folder_id','']);
   }
 }
 
+function claveValida(key) {
+  const clave = PropertiesService.getScriptProperties().getProperty('VIDA_KEY');
+  return !!clave && key === clave;
+}
+
 function doGet(e) {
   ensureSetup();
-  if (!e.parameter || e.parameter.key !== CLAVE) return json({ok:false,error:'unauthorized'});
+  if (!e.parameter || !claveValida(e.parameter.key)) return json({ok:false,error:'unauthorized'});
   if (e.parameter.accion === 'leer') return json({ok:true, ...leerTodo(), finanzas: agendaFinanzas()});
   return json({ok:false,error:'accion desconocida'});
 }
@@ -60,7 +66,7 @@ function doGet(e) {
 function doPost(e) {
   ensureSetup();
   const body = JSON.parse(e.postData.contents);
-  if (body.key !== CLAVE) return json({ok:false,error:'unauthorized'});
+  if (!claveValida(body.key)) return json({ok:false,error:'unauthorized'});
   try {
     switch(body.accion) {
       case 'agregar_fila':           return json({ok:true, id: agregarFila(body.hoja, body.datos)});
@@ -70,7 +76,7 @@ function doPost(e) {
       case 'eliminar_documento':     eliminarDocumento(body.id); return json({ok:true});
       case 'leer_dashboard_externo': return json({ok:true, data: leerExterno(body.id)});
       case 'probar_recordatorio':    recordatorioDiario(); return json({ok:true});
-    }
+      case 'revisar_rebajos':        return json({ok:true, nuevos: revisarRebajos()});    }
     return json({ok:false,error:'accion desconocida'});
   } catch(err) {
     return json({ok:false,error:String(err)});
@@ -80,7 +86,8 @@ function doPost(e) {
 function leerTodo() {
   const ss = SpreadsheetApp.openById(SHEET_ID);
   const res = {};
-  Object.keys(HOJAS).forEach(nombre => {
+  // Config guarda claves: nunca sale hacia el navegador
+  Object.keys(HOJAS).filter(nombre => nombre !== 'Config').forEach(nombre => {
     const hoja = ss.getSheetByName(nombre);
     const filas = hoja.getDataRange().getValues();
     const cab = filas.shift();
@@ -342,7 +349,79 @@ function agendaFinanzas() {
           total_mes: totalMes, pagado_mes: pagadoMes, pendiente_mes: totalMes - pagadoMes, items, cobros, cortes};
 }
 
+// ------------------------------------------------------------
+//  Rebajos automáticos: si la obligación tiene "rebajo_cuenta"
+//  (4 últimos dígitos de la cuenta), se marca sola al llegar el
+//  aviso del BAC de un débito aplicado por ese monto. Los avisos
+//  "fue rechazada" traen el mismo monto y NO cuentan como pago.
+// ------------------------------------------------------------
+
+const TOLERANCIA_REBAJO = 3;   // el monto cambia unos centavos cada mes
+const DIAS_REVISION = 10;      // cuántos días atrás se leen los avisos
+const MARGEN_PERIODO = 15;     // máx. días entre el rebajo y el vencimiento
+
+function leerRebajoBAC(texto) {
+  const t = String(texto).replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ');
+  if (!/fue aplicada correctamente/i.test(t)) return null;
+  const m = t.match(/referencia (\d+), debitando su cuenta IBAN \S*?(\d{4}) por un monto de ([\d,]+\.\d{2}) (Dolares|Colones)\..*?y hora:? (\d{2})\/(\d{2})\/(\d{4})/i);
+  if (!m) return null;
+  return {ref: m[1], cuenta: m[2], monto: Number(m[3].replace(/,/g, '')),
+          moneda: /dolares/i.test(m[4]) ? 'USD' : 'CRC', fecha: m[7] + '-' + m[6] + '-' + m[5]};
+}
+
+// Periodo cuyo vencimiento queda más cerca del rebajo (la cuota del día 1 suele rebajarse el 31).
+function periodoDeRebajo(diaLimite, desde, fecha) {
+  const [y0, m0, d0] = fecha.split('-').map(Number);
+  const dia = Date.UTC(y0, m0 - 1, d0);
+  let mejor = null, menor = Infinity;
+  for (let k = -1; k <= 1; k++) {
+    const y = y0 + Math.floor((m0 - 1 + k) / 12), m = ((m0 - 1 + k) % 12 + 12) % 12;
+    const periodo = y + '-' + String(m + 1).padStart(2, '0');
+    if (desde && periodo < desde) continue;
+    const ultimo = new Date(Date.UTC(y, m + 1, 0)).getUTCDate();
+    const dif = Math.abs(Date.UTC(y, m, Math.min(Number(diaLimite) || 1, ultimo)) - dia) / 86400000;
+    if (dif < menor) { menor = dif; mejor = periodo; }
+  }
+  return menor <= MARGEN_PERIODO ? mejor : null;
+}
+
+function textoCorreo(parte) {
+  let texto = '';
+  const data = parte.body && parte.body.data;
+  if (data && /^text\//.test(parte.mimeType || '')) {
+    const bytes = typeof data === 'string' ? Utilities.base64DecodeWebSafe(data) : data;
+    texto = Utilities.newBlob(bytes).getDataAsString('UTF-8');
+  }
+  return (parte.parts || []).reduce((acc, p) => acc + ' ' + textoCorreo(p), texto);
+}
+
+function revisarRebajos() {
+  const conRebajo = filasHoja('Obligaciones').filter(o => o.id !== '' && String(o.activa).toLowerCase() !== 'no' && String(o.rebajo_cuenta || '').trim());
+  if (!conRebajo.length) return [];
+  const pagos = filasHoja('Pagos').map(p => Object.assign(p, {periodo: normPeriodo(p.periodo)}));
+  const q = 'from:notificaciones@baccredomatic.cr "aplicada correctamente" newer_than:' + DIAS_REVISION + 'd';
+  const lista = Gmail.Users.Messages.list('me', {q, maxResults: 50}).messages || [];
+  const nuevos = [];
+  lista.forEach(item => {
+    const r = leerRebajoBAC(textoCorreo(Gmail.Users.Messages.get('me', item.id, {format: 'full'}).payload));
+    if (!r || pagos.some(p => String(p.notas).includes(r.ref))) return;
+    const o = conRebajo.find(c => String(c.rebajo_cuenta).trim() === r.cuenta &&
+      String(c.moneda).toUpperCase() === r.moneda && Math.abs(Number(c.monto_total) - r.monto) <= TOLERANCIA_REBAJO);
+    if (!o) return;
+    const periodo = periodoDeRebajo(o.dia_limite, normPeriodo(o.desde), r.fecha);
+    if (!periodo || pagos.some(p => String(p.obligacion_id) === String(o.id) && p.periodo === periodo)) return;
+    const pago = {obligacion_id: o.id, periodo, fecha_pago: r.fecha, monto: r.monto, moneda: r.moneda, reembolsado: '',
+                  notas: 'Marcado solo: rebajo BAC …' + r.cuenta + ' (SINPE ref. ' + r.ref + ')'};
+    agregarFila('Pagos', pago);
+    pagos.push(pago);
+    nuevos.push({nombre: o.nombre, periodo, fecha: r.fecha, monto: r.monto, moneda: r.moneda});
+  });
+  return nuevos;
+}
+
 function recordatorioDiario() {
+  let rebajos = [], errorRebajos = false;
+  try { rebajos = revisarRebajos(); } catch (e) { errorRebajos = true; console.error(e); }
   const a = agendaFinanzas();
   const crc = n => '₡' + Math.round(n).toLocaleString('es-CR');
   const monto = i => (String(i.moneda).toUpperCase() === 'USD' ? '$' + Number(i.mi_parte).toLocaleString('es-CR') + ' (' + crc(i.crc) + ')' : crc(i.crc));
@@ -357,6 +436,9 @@ function recordatorioDiario() {
   const proximos = a.items.filter(i => i.estado === 'al_dia');
   let html = '<div style="font-family:Arial,sans-serif;font-size:14px;color:#222;max-width:600px">';
   html += '<h2 style="margin:0 0 4px">Finanzas del día</h2><div style="color:#777;margin-bottom:16px">' + fecha(a.hoy) + ' · tipo de cambio ' + crc(a.tc) + ' por dólar</div>';
+  if (rebajos.length) html += '<h3 style="margin:0 0 6px">Marcado como pagado (rebajo del BAC)</h3><ul style="margin:0 0 16px;padding-left:18px">' +
+    rebajos.map(r => '<li>' + r.nombre + ': ' + (r.moneda === 'USD' ? '$' + r.monto : crc(r.monto)) + ' el ' + fecha(r.fecha) + '</li>').join('') + '</ul>';
+  if (errorRebajos) html += '<p style="margin:0 0 16px;color:#B9770E">Hoy no pude revisar los rebajos del BAC: lo que diga atrasado podría estar pagado.</p>';
   html += urgentes.length
     ? '<h3 style="margin:0 0 6px">Para atender ya</h3><table style="border-collapse:collapse">' + urgentes.map(fila).join('') + '</table>'
     : '<p style="margin:0 0 6px">Nada vence en los próximos ' + DIAS_AVISO + ' días.</p>';
@@ -371,6 +453,12 @@ function recordatorioDiario() {
     ? 'Finanzas: ' + urgentes.map(i => i.nombre + ' ' + cuando(i)).join(' · ')
     : 'Finanzas del día: todo al día';
   MailApp.sendEmail({to: Session.getEffectiveUser().getEmail(), subject: asunto, htmlBody: html});
+}
+
+// Correr UNA VEZ desde el editor (botón Ejecutar) para autorizar la lectura de Gmail.
+function autorizarGmail() {
+  ensureSetup();
+  console.log(JSON.stringify(revisarRebajos()));
 }
 
 // Correr UNA VEZ desde el editor (botón Ejecutar) para autorizar y activar el correo diario.
